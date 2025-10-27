@@ -1,0 +1,42 @@
+<mujoco model="test_hand">
+    <worldbody>
+        <!-- 手掌 -->
+        <body name="palm" pos="0 0 0.2" euler="0 3.14 0">
+            <joint name="palm_slide_x" type="slide" axis="1 0 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+            <joint name="palm_slide_y" type="slide" axis="0 1 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+            <joint name="palm_slide_z" type="slide" axis="0 0 1" range="-.2 .12" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+            <joint name="palm_rotate_x" type="hinge" axis="1 0 0" range="-1.57 1.57" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+            <joint name="palm_rotate_y" type="hinge" axis="0 1 0" range="-1.57 1.57" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+            <joint name="palm_rotate_z" type="hinge" axis="0 0 1" range="-3.14 3.14" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+            
+            <!-- 食指 -->
+            <body name="index_base_link" pos="0.02 0 0">
+                <joint name="index_joint_1" type="hinge" axis="0 1 0" range="-1.57 1.57" limited="true" damping="0.1"/>
+                <body name="index_link_1" pos="0.02 0 0">
+                    <joint name="index_joint_2" type="hinge" axis="0 1 0" range="-1.57 1.57" limited="true" damping="0.1"/>
+                    <body name="index_link_2" pos="0.02 0 0">
+                        <joint name="index_joint_3" type="hinge" axis="0 1 0" range="-1.57 1.57" limited="true" damping="0.1"/>
+                        <body name="index_link_3" pos="0.02 0 0">
+                            <geom type="capsule" size="0.005 0.02" rgba="0.8 0.3 0.3 1"/>
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+
+    <actuator>
+        <!-- 手掌驱动器 -->
+        <position name="palm_slide_x" joint="palm_slide_x" ctrllimited="true" ctrlrange="-.5 .5" kp="1000" dampratio="1.5"/>
+        <position name="palm_slide_y" joint="palm_slide_y" ctrllimited="true" ctrlrange="-.5 .5" kp="1000" dampratio="1.5"/>
+        <position name="palm_slide_z" joint="palm_slide_z" ctrllimited="true" ctrlrange="-.2 .12" kp="1000" dampratio="1.5"/>
+        <position name="palm_rotate_x" joint="palm_rotate_x" ctrllimited="true" ctrlrange="-1.57 1.57" kp="1000" dampratio="1.5"/>
+        <position name="palm_rotate_y" joint="palm_rotate_y" ctrllimited="true" ctrlrange="-1.57 1.57" kp="1000" dampratio="1.5"/>
+        <position name="palm_rotate_z" joint="palm_rotate_z" ctrllimited="true" ctrlrange="-3.14 3.14" kp="1000" dampratio="1.5"/>
+
+        <!-- 食指驱动器 -->
+        <position name="index_joint_1_actuator" joint="index_joint_1" ctrllimited="true" ctrlrange="-1.57 1.57" kp="500" dampratio="1.0"/>
+        <position name="index_joint_2_actuator" joint="index_joint_2" ctrllimited="true" ctrlrange="-1.57 1.57" kp="500" dampratio="1.0"/>
+        <position name="index_joint_3_actuator" joint="index_joint_3" ctrllimited="true" ctrlrange="-1.57 1.57" kp="500" dampratio="1.0"/>
+    </actuator>
+</mujoco>
