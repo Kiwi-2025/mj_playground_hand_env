@@ -29,39 +29,36 @@ state = jit_reset(jax.random.PRNGKey(0))
 
 # 初始化控制信号
 ctrl = jp.zeros(18)
-ctrl = ctrl.at[0].set(-18)
-ctrl = ctrl.at[5].set(-18)
-ctrl = ctrl.at[7].set(-18)
-ctrl = ctrl.at[8].set(-18)
-ctrl = ctrl.at[10].set(-18)
+# ctrl = ctrl.at[0].set(-18)
+ctrl = ctrl.at[5].set(-18) # index
+# ctrl = ctrl.at[7].set(-18)
+# ctrl = ctrl.at[8].set(-18)
+# ctrl = ctrl.at[10].set(-18)
 
 # 分批仿真和渲染
 frames = []
 rollout = [state]
-batch_size = 50  # 每批次仿真步数
-total_steps = 800  # 总仿真步数
+index_quats = []
+index_pos = []
+index_tendon_lengths = []
+total_steps = 200  # 总仿真步数
 
 # 观察是否会将显存/内存快速消耗殆尽
-# for i in range(total_steps):
-#     state = jit_step(state, ctrl)
-#     rollout.append(state) # 不转移到CPU
+for i in range(total_steps):
+     state = jit_step(state, ctrl)
+     # middle_quats.append(env.get_finger_quat(state.data, "middle"))
+     index_pos.append(env.get_finger_pos(state.data, "index"))
+     index_quats.append(env.get_finger_quat(state.data, "index"))
+     index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
+     rollout.append(state) # 不转移到CPU
 
-# demo渲染：先握紧，再伸出2指头
-for _ in range(400):
-    ctrl = ctrl.at[0].set(-18)
-    ctrl = ctrl.at[5].set(-18)
-    state = jit_step(state, ctrl)
-    rollout.append(state)
-
-for _ in range(400):
-    ctrl = ctrl.at[5].set(0)
-    ctrl = ctrl.at[7].set(0)
-    state = jit_step(state, ctrl)
-    rollout.append(state)
+# 保存四元数数据到本地文件
+# jp.save("./middle_finger_quats.npy", jp.stack(middle_quats))
+jp.save("./data/index_finger_pos.npy", jp.stack(index_pos))
+jp.save("./data/index_finger_quats.npy", jp.stack(index_quats))
+jp.save("./data/index_tendon_lengths.npy", jp.stack(index_tendon_lengths))
 
 frames = env.render(rollout, height=480, width=640, camera=camera)
-
-# 保存视频到本地
-output_path = f"./video/obj_hand_rollout_{total_steps}.mp4"
+output_path = f"./video/sim2real.mp4"
 media.write_video(output_path, frames, fps=30)
 print(f"视频已保存到 {output_path}")
