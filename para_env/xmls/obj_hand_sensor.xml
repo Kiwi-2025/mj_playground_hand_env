@@ -42,7 +42,8 @@
         <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="1 1 1" rgb2="0 0 0" markrgb="0 0 0" width="300" height="300"/>
         <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0"/>
     </asset>
-    <option gravity="0 0 -9.8"/>
+    <!-- 我没法把手翻过来，我让他重力朝上还不行吗 -->
+    <option gravity="0 0 9.8"/>
 
     <default>
         <geom solref="0.001 1" solimp="0.99 0.999 0.0001"/>

@@ -1,8 +1,11 @@
 /video/*
 !/video/
 
-/data/*
-!/data/
+# /data/*
+# !/data/
+
+/figs/*
+!/figs/
 
 /para_env/xmls/obj_hand_no_tac.xml
 /para_env/xmls/obj_hand_tac.xml

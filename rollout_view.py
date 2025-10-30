@@ -30,10 +30,7 @@ state = jit_reset(jax.random.PRNGKey(0))
 # 初始化控制信号
 ctrl = jp.zeros(18)
 # ctrl = ctrl.at[0].set(-18)
-ctrl = ctrl.at[5].set(-18) # index
-# ctrl = ctrl.at[7].set(-18)
-# ctrl = ctrl.at[8].set(-18)
-# ctrl = ctrl.at[10].set(-18)
+
 
 # 分批仿真和渲染
 frames = []
@@ -43,14 +40,22 @@ index_pos = []
 index_tendon_lengths = []
 total_steps = 200  # 总仿真步数
 
-# 观察是否会将显存/内存快速消耗殆尽
+ctrl = ctrl.at[5].set(-19) 
 for i in range(total_steps):
      state = jit_step(state, ctrl)
      # middle_quats.append(env.get_finger_quat(state.data, "middle"))
      index_pos.append(env.get_finger_pos(state.data, "index"))
      index_quats.append(env.get_finger_quat(state.data, "index"))
      index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
-     rollout.append(state) # 不转移到CPU
+     rollout.append(state)
+
+ctrl = ctrl.at[5].set(0) # 放松index tendon
+for _ in range(total_steps):
+     state = jit_step(state, ctrl)
+     index_pos.append(env.get_finger_pos(state.data, "index"))
+     index_quats.append(env.get_finger_quat(state.data, "index"))
+     index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
+     rollout.append(state)
 
 # 保存四元数数据到本地文件
 # jp.save("./middle_finger_quats.npy", jp.stack(middle_quats))
