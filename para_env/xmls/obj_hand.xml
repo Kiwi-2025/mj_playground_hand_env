@@ -65,7 +65,8 @@
         <geom type="box" size="0.1 0.1 0.05" rgba=".9 0 0 1" contype="1" conaffinity="1"/>
         <site name="target" size="0.01" rgba="0 0 .9 1" pos="0 0 .06"/>
     </body>-->
-    <body name="palm" pos="0 0 0.2" euler="0 3.14 0">
+    <!-- change palm euler can make the hand upside down -->
+    <body name="palm" pos="0 0 0.2" euler="3.14 3.14 0">
         <joint name="palm_slide_x" type="slide" axis="1 0 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
         <joint name="palm_slide_y" type="slide" axis="0 1 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
         <joint name="palm_slide_z" type="slide" axis="0 0 1" range="-.2 .12" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
