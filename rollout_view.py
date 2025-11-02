@@ -22,7 +22,7 @@ camera = mj.MjvCamera()
 camera.type = mj.mjtCamera.mjCAMERA_FREE
 camera.lookat[:] = [0, 0, 0.2]  # 对准手部模型的中心位置
 camera.distance = 0.3           # 缩短摄像机距离
-camera.azimuth = 90             # 从侧面观察
+camera.azimuth = 270           
 camera.elevation = -20          # 从略微向下的角度观察
 
 state = jit_reset(jax.random.PRNGKey(0))
@@ -40,7 +40,7 @@ index_pos = []
 index_tendon_lengths = []
 total_steps = 200  # 总仿真步数
 
-ctrl = ctrl.at[5].set(-19) 
+ctrl = ctrl.at[5].set(-8) 
 for i in range(total_steps):
      state = jit_step(state, ctrl)
      # middle_quats.append(env.get_finger_quat(state.data, "middle"))

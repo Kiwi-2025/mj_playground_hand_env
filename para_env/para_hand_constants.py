@@ -1,18 +1,11 @@
 from etils import epath
 
 ROOT_PATH = epath.Path(__file__).parent
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "origin_hand.xml"
-# PARA_HAND_XML = ROOT_PATH  / "xmls" / "obj_hand.xml"
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "obj_hand_tac.xml"
-
-# OOM 测试时使用的 XML
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "mesh_hand_tac.xml"    # mesh计算 + tac
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "mesh_hand_no_tac.xml" # mesh计算 + no tac
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "obj_hand_tac.xml"     # obj 计算 + tac
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "obj_hand_no_tac.xml"  # obj 计算 + no tac
-
-# sensor测试使用的 XML
-PARA_HAND_XML = ROOT_PATH / "xmls" / "obj_hand_sensor.xml"
+PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感器，5x5阵列
+# PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_9x9.xml"   # 球状触觉传感器，9x9阵列
+# PARA_HAND_XML = ROOT_PATH / "xmls" / "box_tac_5x5.xml"   # box状触觉传感器，5x5阵列
+# PARA_HAND_XML = ROOT_PATH / "xmls" / "box_tac_9x9.xml"   # box状触觉传感器，9x9阵列
+# PARA_HAND_XML = ROOT_PATH / "xmls" / "obj_hand_tac.xml"   
 
 NQ_POS = 25 # 32
 NQ_VEL = 25 # 31

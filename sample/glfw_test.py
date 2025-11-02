@@ -10,7 +10,7 @@ from mujoco import mjx
 from mujoco.glfw import glfw
 
 from para_env.para_hand_env import TestTask
-from glfw_viewer_control import setup_mouse_callbacks
+from sample.glfw_viewer_control import setup_mouse_callbacks
 
 def main():
     # 初始化 GLFW

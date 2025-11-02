@@ -33,7 +33,7 @@ ctrl = ctrl.at[10].set(-18)
 
 # 分批仿真和渲染
 rollout = [state]
-total_steps = 1000
+total_steps = 10
 
 # 尝试不同 steps 数量的 rollout
 for step in range(total_steps):
@@ -43,15 +43,15 @@ print(f"{total_steps} Test Completed.\n")
 print(env.xml_path)
 
 # # 设置摄像机参数
-# camera = mj.MjvCamera()
-# camera.type = mj.mjtCamera.mjCAMERA_FREE
-# camera.lookat[:] = [0, 0, 0.2]  # 对准手部模型的中心位置
-# camera.distance = 0.3           # 缩短摄像机距离
-# camera.azimuth = 90             # 从侧面观察
-# camera.elevation = -20          # 从略微向下的角度观察
+camera = mj.MjvCamera()
+camera.type = mj.mjtCamera.mjCAMERA_FREE
+camera.lookat[:] = [0, 0, 0.4]  # 对准手部模型的中心位置
+camera.distance = 0.3           # 缩短摄像机距离
+camera.azimuth = 270            # 从侧面观察
+camera.elevation = -30          # 从略微向下的角度观察
 
-# frames = env.render(rollout, height=480, width=640, camera=camera)
-# media.write_video(f"./video/oomTest_obj_tac_{total_steps}.mp4", frames, fps=30)
+frames = env.render(rollout, height=480, width=640, camera=camera)
+media.write_video(f"./video/sphere_tac_9x9_{total_steps}.mp4", frames, fps=30)
 
 # 保存 rollout 到本地文件
 with open("rollout.pkl", "wb") as f:

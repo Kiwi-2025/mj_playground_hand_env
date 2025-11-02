@@ -366,36 +366,36 @@ class FingerConfig:
                     pos=f"{x} {y} -0.002"
                 )
                 # 生成盒状弹簧振子geom元素
-                # geom_elem = ET.Element(
-                #     "geom",
-                #     name=f"{self.finger_name}_markerG_{i}_{j}",
-                #     type="box",
-                #     conaffinity="1",
-                #     contype="1",
-                #     rgba=".9 0 0 .9",
-                #     size=f"{size[0]} {size[1]} {size[2]}",
-                #     mass=".0001",
-                #     friction=tip_attribute["friction"],
-                #     solref=tip_attribute["solref"],
-                #     solimp=tip_attribute["solimp"],
-                #     condim=tip_attribute["condim"]
-                # )
-
-                # 生成球状弹簧振子geom元素
                 geom_elem = ET.Element(
                     "geom",
                     name=f"{self.finger_name}_markerG_{i}_{j}",
-                    type="sphere",
+                    type="box",
                     conaffinity="1",
                     contype="1",
                     rgba=".9 0 0 .9",
-                    size=f"{size[0]}",
+                    size=f"{size[0]} {size[1]} {size[2]}",
                     mass=".0001",
                     friction=tip_attribute["friction"],
                     solref=tip_attribute["solref"],
                     solimp=tip_attribute["solimp"],
                     condim=tip_attribute["condim"]
                 )
+
+                # 生成球状弹簧振子geom元素
+                # geom_elem = ET.Element(
+                #     "geom",
+                #     name=f"{self.finger_name}_markerG_{i}_{j}",
+                #     type="sphere",
+                #     conaffinity="1",
+                #     contype="1",
+                #     rgba=".9 0 0 .9",
+                #     size=f"{size[0]}",
+                #     mass=".0001",
+                #     friction=tip_attribute["friction"],
+                #     solref=tip_attribute["solref"],
+                #     solimp=tip_attribute["solimp"],
+                #     condim=tip_attribute["condim"]
+                # )
                 body_elem.append(geom_elem)
                 marker_elements.append(body_elem)
         return marker_elements
@@ -514,7 +514,7 @@ class FingerConfig:
             # Cylinder
             geoms.append(ET.Element(
                 "geom",
-                type="cylinder",
+                type="capsule", # mjx 中 cylinder 碰撞会报错，改为 capsule
                 euler="0 1.57 0",
                 pos=f"{cylinder_pos} {sphere_pos_y} 0",
                 size=f"{sphere_radius} {sphere_pos_x-cylinder_pos}",
@@ -648,8 +648,8 @@ class FingerConfig:
             fingertip_body = ET.Element("body",name=f"{self.finger_name}_fingertip",pos=f"0.02 {self.link_params[3].height} 0",euler="1.57 0 0")
             ET.SubElement(fingertip_body, "geom", conaffinity="0", contype="0", type="sphere", pos="0 0 0", size=".001", rgba=".9 0 0 .1")
             
-            markers_xml = self.marker_generate(9, 9, 0.001, 0.001)
-            for marker in markers_xml:
+            for marker in self.marker_generate(9, 9, 0.001, 0.001):
+            # for marker in self.marker_generate(5, 5, 0.0015, 0.0015):
                 fingertip_body.append(marker)
 
             # Nest bodies
@@ -794,6 +794,7 @@ class FingerConfig:
             fingertip_body = ET.Element("body", name=f"{self.finger_name}_fingertip", pos=f"0.02 {self.link_params[3].height} 0", euler="1.57 0 0")
             ET.SubElement(fingertip_body, "geom", conaffinity="0", contype="0", type="sphere", pos="0 0 0", size=".001", rgba=".9 0 0 .1")
             for marker in self.marker_generate(9, 9, 0.001, 0.001):
+            # for marker in self.marker_generate(5, 5, 0.0015, 0.0015):
                 fingertip_body.append(marker)
 
             link_3_body.append(fingertip_body)
