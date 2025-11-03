@@ -1,3 +1,6 @@
+# ssh连接有GUI的Linux服务器上运行此脚本以生成视频
+# xvfb-run -s "-screen 0 640x480x24" python /home/rvsa/mj_playground_hand_env/rollout_view.py
+
 import os, sys, time
 import gc
 gc.collect()
@@ -22,7 +25,7 @@ camera = mj.MjvCamera()
 camera.type = mj.mjtCamera.mjCAMERA_FREE
 camera.lookat[:] = [0, 0, 0.2]  # 对准手部模型的中心位置
 camera.distance = 0.3           # 缩短摄像机距离
-camera.azimuth = 270           
+camera.azimuth = 270             # 从侧面观察
 camera.elevation = -20          # 从略微向下的角度观察
 
 state = jit_reset(jax.random.PRNGKey(0))
@@ -38,7 +41,7 @@ rollout = [state]
 index_quats = []
 index_pos = []
 index_tendon_lengths = []
-total_steps = 200  # 总仿真步数
+total_steps = 700  # 总仿真步数
 
 ctrl = ctrl.at[5].set(-8) 
 for i in range(total_steps):
@@ -65,5 +68,6 @@ jp.save("./data/index_tendon_lengths.npy", jp.stack(index_tendon_lengths))
 
 frames = env.render(rollout, height=480, width=640, camera=camera)
 output_path = f"./video/sim2real.mp4"
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
 media.write_video(output_path, frames, fps=30)
 print(f"视频已保存到 {output_path}")
