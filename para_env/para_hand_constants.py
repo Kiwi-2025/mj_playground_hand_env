@@ -7,6 +7,9 @@ PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感
 # PARA_HAND_XML = ROOT_PATH / "xmls" / "box_tac_9x9.xml"   # box状触觉传感器，9x9阵列
 # PARA_HAND_XML = ROOT_PATH / "xmls" / "obj_hand_tac.xml"   
 
+# 一些道具环境xml路径
+# CUBE_XML = ROOT_PATH / "xmls" / "scene_cube.xml"
+
 NQ_POS = 25 # 32
 NQ_VEL = 25 # 31
 NV = 16

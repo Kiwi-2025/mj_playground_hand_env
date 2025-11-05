@@ -1,8 +1,12 @@
+# README
+
 ### 项目结构
 - para_env 为环境相关的配置文件，其中的`xmls`文件夹存储了相关的手的建模
+  - xmls 存放了mjcf文件
+  - config 存放了一些RL参数的配置文件
 - tool 存放了一些有用的小工具
 - data 存放了生成的一些数据
-- sample 存放了一些测试代码，可以作为使用示例参考
+- sample 存放了一些测试代码以及之前的施工代码，可以作为使用示例参考
 
 ### 安装相关依赖
 相关依赖包已经在`requirements.txt`中给出，该`requirements.txt`使用pip工具导出的，安装的时候有几个注意事项

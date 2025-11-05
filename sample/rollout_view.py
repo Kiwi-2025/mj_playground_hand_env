@@ -41,9 +41,9 @@ rollout = [state]
 index_quats = []
 index_pos = []
 index_tendon_lengths = []
-total_steps = 700  # 总仿真步数
+total_steps = 400  # 总仿真步数
 
-ctrl = ctrl.at[5].set(-8) 
+ctrl = ctrl.at[5].set(-15) 
 for i in range(total_steps):
      state = jit_step(state, ctrl)
      # middle_quats.append(env.get_finger_quat(state.data, "middle"))
@@ -52,13 +52,13 @@ for i in range(total_steps):
      index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
      rollout.append(state)
 
-ctrl = ctrl.at[5].set(0) # 放松index tendon
-for _ in range(total_steps):
-     state = jit_step(state, ctrl)
-     index_pos.append(env.get_finger_pos(state.data, "index"))
-     index_quats.append(env.get_finger_quat(state.data, "index"))
-     index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
-     rollout.append(state)
+# ctrl = ctrl.at[5].set(0) # 放松index tendon
+# for _ in range(total_steps):
+#      state = jit_step(state, ctrl)
+#      index_pos.append(env.get_finger_pos(state.data, "index"))
+#      index_quats.append(env.get_finger_quat(state.data, "index"))
+#      index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
+#      rollout.append(state)
 
 # 保存四元数数据到本地文件
 # jp.save("./middle_finger_quats.npy", jp.stack(middle_quats))

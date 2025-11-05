@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 import math
+import os
+from datetime import datetime
 
 # 加载数据
 index_pos = np.load("./data/index_finger_pos.npy")  # 形状为 (100, 12)
@@ -69,5 +71,9 @@ plt.legend()
 # 显示图像
 plt.grid()
 plt.tight_layout()
-plt.savefig("./data/pitch_vs_tendon_length_all_links.png")
+# 添加一个时间戳防止覆盖
+ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+fname = f"./figs/pitch_vs_tendon_length{ts}.png"
+plt.savefig(fname, dpi=300)
+print(f"Saved figure to {fname}")
 plt.show()

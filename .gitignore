@@ -4,8 +4,8 @@
 # /data/*
 # !/data/
 
-/figs/*
-!/figs/
+# /figs/*
+# !/figs/
 
 /para_env/xmls/obj_hand_no_tac.xml
 # /para_env/xmls/obj_hand_tac.xml
