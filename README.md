@@ -9,7 +9,8 @@
 - sample 存放了一些测试代码以及之前的施工代码，可以作为使用示例参考
 
 ### 安装相关依赖
-相关依赖包已经在`requirements.txt`中给出，该`requirements.txt`使用pip工具导出的，安装的时候有几个注意事项
+相关依赖包已经在`requirements.yml`中给出，该`requirements.yml`使用conda工具导出的，安装的时候有几个注意事项
+- 安装指令为 `conda env create -f requirements.yml`，然后通过`conda activate mjx_env`激活环境
 - jax 的版本与 cuda 相对应问题，参考 https://jax.net.cn/en/latest/installation.html 即可
 - playground 的安装，不建议PyPI安装playground，建议通过clone后放到某个位置然后通过`pip -install -e .`将其设置为开发者模式，因为下面的方法需要篡改这个包
 - mujoco_menagerie 的下载配置问题
