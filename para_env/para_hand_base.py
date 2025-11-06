@@ -40,37 +40,12 @@ class ParaHandEnv(mjx_env.MjxEnv):
         self._mjx_model = mjx.put_model(self._mj_model)
         self._xml_path = xml_path
 
-    # Sensors reading.
-    def get_finger_quat(self, data:mjx.Data, finger_name: str) -> jax.Array:
-        """获取指定手指所有links的四元数表示"""
-        sensor_names = [
-            f"{finger_name}_base_link_quat",
-            f"{finger_name}_link_1_quat",
-            f"{finger_name}_link_2_quat",
-            f"{finger_name}_link_3_quat",
-        ]
-        return jp.concatenate([
-            mjx_env.get_sensor_data(self.mj_model, data, sensor_name)
-            for sensor_name in sensor_names
-        ])
-
-    def get_finger_pos(self, data:mjx.Data, finger_name: str) -> jax.Array:
-        """获取指定手指所有links的位置表示"""
-        sensor_names = [
-            f"{finger_name}_base_link_frame_origin_pos",
-            f"{finger_name}_link_1_frame_origin_pos",
-            f"{finger_name}_link_2_frame_origin_pos",
-            f"{finger_name}_link_3_frame_origin_pos",
-        ]
-        return jp.concatenate([
-            mjx_env.get_sensor_data(self.mj_model, data, sensor_name)
-            for sensor_name in sensor_names
-        ])
-    
+    # Sensors reading. Make sure to add corresponding sensors in the XML file.  
     def get_tendon_length(self, data:mjx.Data, tendon_name: str) -> jax.Array:
         """获取指定肌腱的长度"""
         sensor_name = f"{tendon_name}_length"
         return mjx_env.get_sensor_data(self.mj_model, data, sensor_name)
+    
     
     # Accessors: used to save files.
     @property

@@ -7,18 +7,18 @@ from ml_collections import config_dict
 from mujoco import mjx
 from mujoco_playground._src import mjx_env
 
-from para_env import rotate_env
+from para_env import reorient_env
 
 _envs = {
-    "ParaHandRotate": rotate_env.ParaHandRotate,
+    "ParaHandRotate": reorient_env.ParaHandRotate,
 }
 
 _cfgs = {
-    "ParaHandRotate": rotate_env.default_config,
+    "ParaHandRotate": reorient_env.default_config,
 }
 
 _randomizer = {
-    "ParaHandRotate": rotate_env.domain_randomize,
+    "ParaHandRotate": reorient_env.domain_randomize,
 }
 
 def __getattr__(name):

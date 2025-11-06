@@ -1,4 +1,4 @@
-"""ParaHand旋转任务环境"""
+"""ParaHandReorient任务环境"""
 from typing import Any, Dict, Optional, Union
 
 import jax
@@ -7,6 +7,7 @@ from functools import partial
 from ml_collections import config_dict
 import mujoco as mj
 from mujoco import mjx
+from mujoco.mjx._src import math
 import numpy as np
 
 from mujoco_playground._src import mjx_env
@@ -17,7 +18,7 @@ from para_env import para_hand_base
 from para_env.para_hand_base import ParaHandEnv
 
 def default_config() -> config_dict.ConfigDict:
-  """默认配置，参考LeapHandEnv,需要根据实际更改"""
+  """config for ParaHandReorient environment. Check existing config for details."""
   return config_dict.create(
       ctrl_dt=0.02,
       sim_dt=0.002,
@@ -28,6 +29,7 @@ def default_config() -> config_dict.ConfigDict:
       episode_length=1000,
       success_threshold=0.1,
       history_len=1,
+      # 观测噪声配置
       obs_noise=config_dict.create(
           level=1.0,
           scales=config_dict.create(
@@ -37,6 +39,7 @@ def default_config() -> config_dict.ConfigDict:
           ),
           random_ori_injection_prob=0.0,
       ),
+      # 奖励函数配置
       reward_config=config_dict.create(
           scales=config_dict.create(
               orientation=5.0,
@@ -49,6 +52,7 @@ def default_config() -> config_dict.ConfigDict:
           ),
           success_reward=100.0,
       ),
+      # 扰动配置
       pert_config=config_dict.create(
           enable=False,
           linear_velocity_pert=[0.0, 3.0],
@@ -56,21 +60,23 @@ def default_config() -> config_dict.ConfigDict:
           pert_duration_steps=[1, 100],
           pert_wait_steps=[60, 150],
       ),
+
       impl='jax',
       nconmax=30 * 8192,
       njmax=128,
   )
 
-class ParaHandRotate(ParaHandEnv):
-    """ParaHand旋转任务环境"""
+class ParaHandReorient(ParaHandEnv):
+    """ParaHand重定位任务环境"""
 
     def __init__(
         self,
         config: config_dict.ConfigDict = default_config(),
         config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
-    ):
+    ):  
         super().__init__(
-            xml_path=consts.PARA_HAND_XML.as_posix(),
+            xml_path=consts.TASK_XML_FILES["reorient"].as_posix(),
+            # change const xml to para change xml later
             config=config,
             config_overrides=config_overrides,
         )
@@ -102,6 +108,15 @@ class ParaHandRotate(ParaHandEnv):
         self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
         self._floor_geom_id = self._mj_model.geom("floor").id
         self._cube_geom_id = self._mj_model.geom("cube").id
+
+        self._target_sid=mjx_env.get_site_ids(self.mj_model, ["target"])
+        self._palm_bid=mjx_env.get_body_ids(self.mj_model, ["palm"])
+        self._tips_bids=mjx_env.get_body_ids(self.mj_model, ["thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"])
+        self._inner_sids=mjx_env.get_site_ids(self.mj_model, consts.INNER_SITE_NAMES)
+        self._outer_sids=mjx_env.get_site_ids(self.mj_model, consts.OUTER_SITE_NAMES)
+        # get ids for tactile geoms
+        self._tactile_geom_ids=mjx_env.get_geom_ids(self.mj_model, consts.TACTILE_GEOM_NAMES)
+        self._tactile_geom_body_ids = mjx_env.get_geom_body_ids(self.mj_model, consts.TACTILE_GEOM_NAMES)
 
         # Initialize default pose and limits
         home_key = self._mj_model.keyframe("home") # TODO: 确认home keyframe是否存在
@@ -169,10 +184,12 @@ class ParaHandRotate(ParaHandEnv):
 
     def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
         data = mjx_env.step(model=self.mjx_model,data=state.data,action=action)
-
+        
+        # get observations and done signal
         obs = self._get_obs(data, state.info, state.obs["state"])
         done = self._get_termination(data, state.info)
 
+        # get rewards
         rewards = self._get_reward(data, action, state.info, state.metrics, done)
         reward = {
             k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
@@ -200,20 +217,23 @@ class ParaHandRotate(ParaHandEnv):
     ) -> mjx_env.Observation:
         joint_qpos = data.qpos[self._hand_qids]
         info["rng"], noise_rng = jax.random.split(info["rng"])
-        noisy_joint_qpos = (
-            joint_qpos
-            + (2 * jax.random.uniform(noise_rng, shape=joint_qpos.shape) - 1)
-            * self._config.noise_config.level
-            * self._config.noise_config.scales.joint_pos
-        ) # add some noise to joint positions
+        # TODO： add noise to cube position and orientation
+        # noisy_joint_qpos = (
+        #     joint_qpos
+        #     + (2 * jax.random.uniform(noise_rng, shape=joint_qpos.shape) - 1)
+        #     * self._config.noise_config.level
+        #     * self._config.noise_config.scales.joint_pos
+        # ) # add some noise to joint positions
 
         state = jp.concatenate([
-            noisy_joint_qpos,
+            joint_qpos,
+            # noisy_joint_qpos,
             info["last_act"],
         ])
         obs_history = jp.roll(obs_history, state.size)
         obs_history = obs_history.at[: state.size].set(state)
         
+        # all these functions should be defined in the base class, and necessary sensors should be added to the xml
         cube_pos = self.get_cube_position(data)
         palm_pos = self.get_palm_position(data)
         cube_pos_error = palm_pos - cube_pos
@@ -221,13 +241,11 @@ class ParaHandRotate(ParaHandEnv):
         cube_angvel = self.get_cube_angvel(data)
         cube_linvel = self.get_cube_linvel(data)
         fingertip_positions = self.get_fingertip_positions(data)
-        joint_torques = data.actuator_force
     
         privileged_state = jp.concatenate([
             state,
             joint_qpos,
             data.qvel[self._hand_dqids],
-            joint_torques,
             fingertip_positions,
             cube_pos_error,
             cube_quat,
@@ -248,54 +266,261 @@ class ParaHandRotate(ParaHandEnv):
         metrics: dict[str, Any],
         done: jax.Array,
     ) -> dict[str, jax.Array]:
+        """计算奖励函数，结合参考设计进行改进。"""
         del metrics  # Unused.
+
+        # 获取方块和目标的姿态
+        cube_ori = self.get_cube_orientation(data)
+        # TODO: replace with a easily change goal orientation function
+        # goal_ori = self.orientation_target  # 目标姿态
+        goal_ori = jp.array([1.0, 0.0, 0.0, 0.0])  # 假设目标姿态为单位四元数
+        quat_diff = math.quat_mul(cube_ori, math.quat_inv(goal_ori))
+        quat_diff = quat_diff / jp.linalg.norm(quat_diff)
+        ori_error = 2 * jp.arccos(jp.clip(quat_diff[3], -1.0, 1.0))  # 姿态误差
+        reward_orientation = (
+            self._config.reward_config.scales.orientation
+            * (1 - reward.tolerance(ori_error, 0, 0.2, 1 / jp.pi))
+        )
+
+        # 获取方块的位置误差
         cube_pos = self.get_cube_position(data)
-        palm_pos = self.get_palm_position(data)
-        cube_pos_error = palm_pos - cube_pos
-        cube_angvel = self.get_cube_angvel(data)
-        cube_linvel = self.get_cube_linvel(data)
+        cube_pos_mse = jp.linalg.norm(cube_pos - self._init_cube_pos)
+        reward_position = (
+            self._config.reward_config.scales.position
+            * (1 - reward.tolerance(cube_pos_mse, 0, 0.02, 10))
+        )
+
+        # 检查是否失败（方块掉落）
+        fail_terminate = cube_pos[2] < -0.05
+        reward_termination = (
+            self._config.reward_config.scales.termination
+            * fail_terminate
+            * (self._config.episode_length - info["step"])
+        )
+
+        # 手指位置尽量少偏离初始状态
+        reward_hand_pose = (
+            self._config.reward_config.scales.hand_pose
+            * jp.sum(jp.square(data.qpos[self._hand_qids] - self._default_pose))
+        )
+
+        # 手指动作前后变化尽量小
+        reward_action_rate = (
+            self._config.reward_config.scales.action_rate
+            * jp.sum(jp.square(action - info["last_act"]))
+        )
+
+        # 手指运动速度尽量小
+        reward_energy = (
+            self._config.reward_config.scales.energy * jp.sum(jp.square(action))
+        )
+
+        # 成功奖励（姿态误差小于阈值）
+        is_success = ori_error < self._config.success_threshold
+        reward_success = self._config.reward_config.success_reward * is_success
+
+        # 奖励信息
+        rewards = {
+            "reward_orientation": reward_orientation,
+            "reward_position": reward_position,
+            "reward_hand_pose": reward_hand_pose,
+            "reward_action_rate": reward_action_rate,
+            "reward_energy": reward_energy,
+            "fail_terminate": fail_terminate,
+            "is_success": is_success,
+        }
+        return rewards
+
+    # Additional sensors specially for this task env
+    # TODO: check the sensor names and add these sensors to the xml if not exists
+    def get_fingertip_positions(self, data:mjx.Data) -> jax.Array:
+        """获取所有指尖的位置表示"""
+        sensor_names = [
+            "thumb_fingertip_pos",
+            "index_fingertip_pos",
+            "middle_fingertip_pos",
+            "ring_fingertip_pos",
+            "little_fingertip_pos",
+        ]
+        return jp.concatenate([
+            mjx_env.get_sensor_data(self.mj_model, data, sensor_name)
+            for sensor_name in sensor_names
+        ])
+
+    def get_cube_position(self, data:mjx.Data) -> jax.Array:
+        """获取方块的位置表示""" 
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_freejoint_frame_origin_pos")
+
+    def get_cube_orientation(self, data:mjx.Data) -> jax.Array:
+        """获取方块的四元数表示"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_freejoint_frame_origin_quat")
+
+    def get_cube_angvel(self, data:mjx.Data) -> jax.Array:
+        """获取方块的角速度表示"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_freejoint_angvel")
+
+    def get_cube_linvel(self, data:mjx.Data) -> jax.Array:
+        """获取方块的线速度表示"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_freejoint_linvel")
+    
+    def get_palm_position(self, data:mjx.Data) -> jax.Array:
+        """获取手掌的位置表示"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "palm_frame_origin_pos")
+    
+    # Tactile sensor processing
+    def _find_contact_indices(self, data: mjx.Data) -> tuple[jax.Array, jax.Array]:
+        """Find contact indices for each tactile geom.
+        
+        Args:
+        data: MuJoCo data
+        
+        Returns:
+        Tuple of (contact_idx_valid, mask) arrays:
+            - contact_idx_valid: Boolean array indicating which tactile sensors have contact
+            - mask: Array of contact indices (-1 for no contact)
+        """
+        # marker点几何体ID与contact几何体的匹配检测
+        tactile_ids = jp.array(self._tactile_geom_ids)[:, None]  # Shape: [n_tactile, 1]
+        is_in_contact = (tactile_ids == data.contact.geom1[:data.ncon]) | (tactile_ids == data.contact.geom2[:data.ncon])
+        
+        # 选取contact序号的最小值作为marker点对应的contact序号
+        masked_indices = jp.where(is_in_contact, 
+                                jp.arange(data.ncon), 
+                                jp.full_like(is_in_contact, data.ncon, dtype=int))
+        
+        # 生成mask并计算有效的接触
+        mask = jp.where(jp.min(masked_indices, axis=1) < data.ncon, 
+                        jp.min(masked_indices, axis=1), 
+                        jp.full(len(self._tactile_geom_ids), -1))
+        
+        return mask >= 0, mask
+
+    def _extract_contact_data(self, data: mjx.Data, contact_idx_valid: jax.Array, mask: jax.Array) -> tuple[jax.Array, jax.Array]:
+        """Extract contact distances and determine which tactile geoms are geom2.
+        
+        Args:
+        data: MuJoCo data
+        contact_idx_valid: Boolean array indicating which tactile sensors have contact
+        mask: Array of contact indices (-1 for no contact)
+        
+        Returns:
+        Tuple of (contact_dists, is_geom2):
+            - contact_dists: Contact distances for each tactile sensor
+            - is_geom2: Boolean array indicating if the tactile sensor is geom2 in the contact
+        """
+        # Extract contact distances directly
+        contact_dists = jp.where(contact_idx_valid, data.contact.dist[mask], 0.0)
+        
+        # Determine if each tactile geom is geom2 in the contact directly
+        is_geom2 = jp.where(
+            contact_idx_valid, 
+            data.contact.geom2[mask] == jp.array(self._tactile_geom_ids), 
+            False
+        )
+        
+        return contact_dists, is_geom2
+
+    def _extract_normals(self, data: mjx.Data, contact_idx_valid: jax.Array, mask: jax.Array, is_geom2: jax.Array) -> jax.Array:
+        """Extract contact normals in world frame and flip if necessary.
+        
+        Args:
+        data: MuJoCo data
+        contact_idx_valid: Boolean array indicating which tactile sensors have contact
+        mask: Array of contact indices (-1 for no contact)
+        is_geom2: Boolean array indicating if the tactile sensor is geom2 in the contact
+        
+        Returns:
+        Contact normals in world frame
+        """
+        # Extract frame data and stack into normals directly
+        normals_world = jp.where(
+            contact_idx_valid[:, None],
+            jp.stack([
+                data.contact.frame[mask, 2, 0],
+                data.contact.frame[mask, 2, 1], 
+                data.contact.frame[mask, 2, 2]
+            ], axis=-1),
+            jp.zeros((len(self._tactile_geom_ids), 3))
+        )
+        
+        # Flip normals where the tactile geom is geom2
+        return normals_world * jp.where(is_geom2, -1.0, 1.0)[:, None]
+
+    def _transform_normals_to_local(self, data: mjx.Data, contact_idx_valid: jax.Array, normals_world: jax.Array) -> jax.Array:
+        """Transform normals from world to local body frames.
+        
+        Args:
+        data: MuJoCo data
+        contact_idx_valid: Boolean array indicating which tactile sensors have contact
+        normals_world: Normals in world frame
+        
+        Returns:
+        Normals in local body frames
+        """
+        # Get body orientations and convert quats to rotation matrices in one step
+        body_rots = jax.vmap(math.quat_to_mat)(data.xquat[jp.array(self._tactile_geom_body_ids)])
+        
+        # Transform normals to local coordinates and apply mask in one operation
+        return jp.where(
+        contact_idx_valid[:, None],
+        jax.vmap(lambda rot, normal: rot.T @ normal)(body_rots, normals_world),
+        jp.zeros_like(normals_world)
+        )
+
+    def _group_by_finger(self, contact_forces: jax.Array) -> dict[str, jax.Array]:
+        """Group contact forces by finger.
+        
+        Args:
+        contact_forces: Contact forces for all tactile sensors
+        
+        Returns:
+        Dictionary mapping finger name to contact forces
+        """
+        # Directly create the grid coordinates
+        x = jp.tile(jp.arange(9) * 0.001, 9)
+        y = jp.repeat(jp.arange(9) * 0.001, 9)
+        grid = jp.stack([x, y], axis=1)
+        
+        # Compute finger forces in one step
+        geoms_per_finger = len(self._tactile_geom_ids) // 5
+        
+        # Create dictionary directly without intermediate lists
         return {
-            "angvel": self._reward_angvel(cube_angvel, cube_pos_error),
-            "linvel": self._cost_linvel(cube_linvel),
-            "termination": done,
-            "action_rate": self._cost_action_rate(
-                action, info["last_act"], info["last_last_act"]
-            ),
-            "pose": self._cost_pose(data.qpos[self._hand_qids]),
-            "torques": self._cost_torques(data.actuator_force),
-            "energy": self._cost_energy(
-                data.qvel[self._hand_dqids], data.actuator_force
-            ),
+            name: jp.concatenate([grid, contact_forces[i*geoms_per_finger:(i+1)*geoms_per_finger]], axis=1)
+            for i, name in enumerate(["thumb", "index", "middle", "ring", "little"])
         }
 
-    def _cost_torques(self, torques: jax.Array) -> jax.Array:
-        return jp.sum(jp.square(torques))
-    
-    def _cost_energy(
-        self, qvel: jax.Array, qfrc_actuator: jax.Array
-    ) -> jax.Array:
-        return jp.sum(jp.abs(qvel) * jp.abs(qfrc_actuator))
-    
-    def _cost_linvel(self, cube_linvel: jax.Array) -> jax.Array:
-        return jp.linalg.norm(cube_linvel, ord=1, axis=-1)
-    
-    def _reward_angvel(
-        self, cube_angvel: jax.Array, cube_pos_error: jax.Array
-    ) -> jax.Array:
-        # Unconditionally maximize angvel in the z-direction.
-        del cube_pos_error  # Unused.
-        return cube_angvel @ jp.array([0.0, 0.0, 1.0])
-    
-    def _cost_action_rate(
-        self, act: jax.Array, last_act: jax.Array, last_last_act: jax.Array
-    ) -> jax.Array:
-        del last_last_act  # Unused.
-        return jp.sum(jp.square(act - last_act))
-    
-    def _cost_pose(self, joint_angles: jax.Array) -> jax.Array:
-        return jp.sum(jp.square(joint_angles - self._default_pose))
+    def get_tactile_info(self, data: mjx.Data) -> dict[str, jax.Array]:
+        """Get tactile information for all fingers.
+        
+        Args:
+            data: MuJoCo data
+        
+        Returns:
+            Dictionary mapping finger name to contact forces
+        """
+        # Find contact indices for tactile geoms
+        contact_idx_valid, mask = self._find_contact_indices(data)
+        # jax.debug.print("mask shape:{}", mask.shape)
+        # Extract contact data
+        contact_dists, is_geom2 = self._extract_contact_data(data, contact_idx_valid, mask)
+        # print("contact_dists shape:", contact_dists.shape)
+        # print("is_geom2 shape:", is_geom2.shape)
 
-    # some necessary properties
+        # Extract normals in world frame
+        normals_world = self._extract_normals(data, contact_idx_valid, mask, is_geom2)
+        # print("normals_world shape:", normals_world.shape)
+
+        # Transform normals to local body frames
+        normals_local = self._transform_normals_to_local(data, contact_idx_valid, normals_world)
+        # print("normals_local shape:", normals_local.shape)
+        # Calculate contact forces
+        contact_forces = normals_local * contact_dists[:, None]
+        # print("contact_forces shape:", contact_forces.shape)
+        # Group by finger
+        return self._group_by_finger(contact_forces)
+
+    # some necessary properties, donot change this part
     @property
     def xml_path(self) -> str:
         # 返回 XML 文件路径
@@ -314,7 +539,7 @@ class ParaHandRotate(ParaHandEnv):
         return self._mjx_model
 
 def domain_randomize(model: mjx.Model, rng: jax.Array):
-        mj_model = ParaHandRotate().mj_model
+        mj_model = ParaHandReorient().mj_model
         cube_geom_id = mj_model.geom("cube").id
         cube_body_id = mj_model.body("cube").id
         hand_qids = mjx_env.get_qpos_ids(mj_model, consts.JOINT_NAMES)
@@ -464,7 +689,7 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
         return model, in_axes
 
 if __name__ == "__main__":
-    env = ParaHandRotate()
+    env = ParaHandReorient()
     rng = jax.random.PRNGKey(0)
     state = env.reset(rng)
     print("环境重置成功！")

@@ -2,13 +2,11 @@ from etils import epath
 
 ROOT_PATH = epath.Path(__file__).parent
 PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感器，5x5阵列
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_9x9.xml"   # 球状触觉传感器，9x9阵列
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "box_tac_5x5.xml"   # box状触觉传感器，5x5阵列
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "box_tac_9x9.xml"   # box状触觉传感器，9x9阵列
-# PARA_HAND_XML = ROOT_PATH / "xmls" / "obj_hand_tac.xml"   
 
-# 一些道具环境xml路径
-# CUBE_XML = ROOT_PATH / "xmls" / "scene_cube.xml"
+# 任务对应的 XML 文件路径
+TASK_XML_FILES = {
+    "reorient": ROOT_PATH / "xmls" / "reorient_hand.xml",
+}
 
 NQ_POS = 25 # 32
 NQ_VEL = 25 # 31
@@ -19,8 +17,8 @@ NT_FORCE=5
 TACTILE_GEOM_NAMES = [
     f"{finger}_markerG_{i}_{j}"
     for finger in ["thumb", "index", "middle", "ring", "little"]
-    for i in range(9)
-    for j in range(9)
+    # for i in range(9) for j in range(9)   # 9x9阵列
+    for i in range(5) for j in range(5)     # 5x5阵列
 ]
 
 INNER_SITE_NAMES = [
