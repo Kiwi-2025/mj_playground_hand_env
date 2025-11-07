@@ -47,7 +47,7 @@ from para_env import get_default_config, load, register_environment, get_domain_
 from para_env.config import params
 
 # Load ParaHand Rotate environment
-env_name = "ParaHandRotate"
+env_name = "ParaHandReorient"
 env = load(env_name)
 env_cfg = get_default_config(env_name)
 

@@ -10,15 +10,15 @@ from mujoco_playground._src import mjx_env
 from para_env import reorient_env
 
 _envs = {
-    "ParaHandRotate": reorient_env.ParaHandRotate,
+    "ParaHandReorient": reorient_env.ParaHandReorient,
 }
 
 _cfgs = {
-    "ParaHandRotate": reorient_env.default_config,
+    "ParaHandReorient": reorient_env.default_config,
 }
 
 _randomizer = {
-    "ParaHandRotate": reorient_env.domain_randomize,
+    "ParaHandReorient": reorient_env.domain_randomize,
 }
 
 def __getattr__(name):

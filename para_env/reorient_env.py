@@ -108,16 +108,23 @@ class ParaHandReorient(ParaHandEnv):
         self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
         self._floor_geom_id = self._mj_model.geom("floor").id
         self._cube_geom_id = self._mj_model.geom("cube").id
+        # debug info
+        # print("hand qpos ids num:", self._hand_qids.shape)
+        # print("hand qvel ids num:", self._hand_dqids.shape) 
 
-        self._target_sid=mjx_env.get_site_ids(self.mj_model, ["target"])
-        self._palm_bid=mjx_env.get_body_ids(self.mj_model, ["palm"])
-        self._tips_bids=mjx_env.get_body_ids(self.mj_model, ["thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"])
-        self._inner_sids=mjx_env.get_site_ids(self.mj_model, consts.INNER_SITE_NAMES)
-        self._outer_sids=mjx_env.get_site_ids(self.mj_model, consts.OUTER_SITE_NAMES)
+        # self._target_sid=mjx_env.get_site_ids(self.mj_model, ["target"])
+        self._palm_bid = self._mj_model.body("palm").id
+        self._tips_bids = [self._mj_model.body(tip).id for tip in [
+            "thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"
+        ]]
+        # 不清楚inner和outer sites的作用，暂时注释掉. If needed, can uncomment and add in xml files
+        # self._inner_sids = [self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES]
+        # self._outer_sids = [self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES]
+        
         # get ids for tactile geoms
-        self._tactile_geom_ids=mjx_env.get_geom_ids(self.mj_model, consts.TACTILE_GEOM_NAMES)
-        self._tactile_geom_body_ids = mjx_env.get_geom_body_ids(self.mj_model, consts.TACTILE_GEOM_NAMES)
-
+        self._tactile_geom_ids = [self._mj_model.geom(name).id for name in consts.TACTILE_GEOM_NAMES]
+        self._tactile_geom_body_ids = [self._mj_model.body(name).id for name in consts.TACTILE_BODY_NAMES]
+        
         # Initialize default pose and limits
         home_key = self._mj_model.keyframe("home") # TODO: 确认home keyframe是否存在
         self._init_q = jp.array(home_key.qpos)

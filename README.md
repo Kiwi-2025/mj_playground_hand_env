@@ -16,3 +16,7 @@
 - mujoco_menagerie 的下载配置问题
   - 方案1：删除playground中检查mujoco_menagerie的函数，具体位置在 mjx_env.py 的 `ensure_menagerie_exists`函数中
   - 方案2：手动添加 mujoco_menagerie 到 `./mujoco_playground/mujoco_playground/external_dep/` 中
+
+### 特性
+
+- **xml的路径**： playground 中使用的 xml 的路径是相对于运行的 python 文件的，这与 mujoco 刚好相反， mujoco 是直接相对于 xml 文件本身的，这一点非常奇怪？（我怀疑我在某个地方指定了路径地址导致出错，但是我还没有检查出来，所以我现在把路径改到相对于 train 文件）

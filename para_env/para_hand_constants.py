@@ -5,7 +5,7 @@ PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感
 
 # 任务对应的 XML 文件路径
 TASK_XML_FILES = {
-    "reorient": ROOT_PATH / "xmls" / "reorient_hand.xml",
+    "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand.xml",
 }
 
 NQ_POS = 25 # 32
@@ -16,6 +16,13 @@ NT_FORCE=5
 
 TACTILE_GEOM_NAMES = [
     f"{finger}_markerG_{i}_{j}"
+    for finger in ["thumb", "index", "middle", "ring", "little"]
+    # for i in range(9) for j in range(9)   # 9x9阵列
+    for i in range(5) for j in range(5)     # 5x5阵列
+]
+
+TACTILE_BODY_NAMES = [
+    f"{finger}_markerB_{i}_{j}"
     for finger in ["thumb", "index", "middle", "ring", "little"]
     # for i in range(9) for j in range(9)   # 9x9阵列
     for i in range(5) for j in range(5)     # 5x5阵列
@@ -41,30 +48,45 @@ OUTER_SITE_NAMES = [
     for i in range(1,5)
 ]
 
-
+# change these joint names to fit xml file
 JOINT_NAMES = [
-    # index
-    "if_mcp",
-    "if_rot",
-    "if_pip",
-    "if_dip",
-    # middle
-    "mf_mcp",
-    "mf_rot",
-    "mf_pip",
-    "mf_dip",
-    # ring
-    "rf_mcp",
-    "rf_rot",
-    "rf_pip",
-    "rf_dip",
     # thumb
-    "th_cmc",
-    "th_axl",
-    "th_mcp",
-    "th_ipl",
+    "thumb_joint_1",
+    "thumb_joint_2",
+    "thumb_universal_1",
+    "thumb_universal_2",
+    # index
+    "index_joint_0",
+    "index_joint_1",
+    "index_joint_2",
+    "index_swing",
+    # middle
+    "middle_joint_0",
+    "middle_joint_1",
+    "middle_joint_2",
+    # ring
+    "ring_joint_0",
+    "ring_joint_1",
+    "ring_joint_2",
+    "ring_swing",
+    # little
+    "little_joint_0",
+    "little_joint_1",
+    "little_joint_2",
+    "little_swing",
+    # palm
+    "palm_rotate_x",
+    "palm_rotate_y",
+    "palm_rotate_z",
+    "palm_slide_x",
+    "palm_slide_y",
+    "palm_slide_z",
+    
+    # others
+    "cube_freejoint",
 ]
-
+    
+# change these actuator names to fit xml file
 ACTUATOR_NAMES = [
     # index
     "if_mcp_act",
