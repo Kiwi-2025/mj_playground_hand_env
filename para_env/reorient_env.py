@@ -134,11 +134,12 @@ class ParaHandReorient(ParaHandEnv):
     def reset(self, rng: jax.Array) -> mjx_env.State:
         # Randomizes hand pos
         rng, pos_rng, vel_rng = jax.random.split(rng, 3)
-        q_hand = jp.clip(
-            self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ,)),
-            self._lowers,
-            self._uppers,
-        )
+        q_hand = jp.zeros(consts.NQ_POS)
+        # q_hand = jp.clip(
+        #     self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ,)),
+        #     self._lowers,
+        #     self._uppers,
+        # )
         v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
 
         # Randomizes cube qpos and qvel

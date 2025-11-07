@@ -8,10 +8,16 @@ TASK_XML_FILES = {
     "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand.xml",
 }
 
-NQ_POS = 25 # 32
-NQ_VEL = 25 # 31
-NV = 16
-NU = 16
+# TODO: 确认自由度数量
+NQ = 32  # 5fingers × 4DOF + 6DOF(base) = 26 DOF (32 values due to quaternion)
+
+# 位置和速度自由度
+NQ_POS = 32  # 修改为32: 完整的位置状态向量长度 
+NQ_VEL = 31  # 修改为31: 速度状态向量长度(quaternion角速度用3个值)
+
+# 实际控制自由度
+NV = 26  # 修改为26: 实际物理自由度数量
+NU = 20  # 修改为20: 可控制的关节数量(只有手指关节)
 NT_FORCE=5
 
 TACTILE_GEOM_NAMES = [

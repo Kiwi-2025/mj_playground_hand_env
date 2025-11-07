@@ -26,7 +26,7 @@ def brax_ppo_config(
     )
     
     # 根据环境名称添加特定参数
-    if env_name == "ParaHandRotate":
+    if env_name == "ParaHandReorient":
         rl_config.update(
             num_resets_per_eval=10,
             num_timesteps=10_000_000,
