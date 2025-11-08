@@ -19,6 +19,16 @@ def get_assets() -> Dict[str, bytes]:
   # mjx_env.update_assets(assets, consts.ROOT_PATH / "xmls" / "meshes")
   return assets
 
+def uniform_quat(rng: jax.Array) -> jax.Array:
+  """Generate a random quaternion from a uniform distribution."""
+  u, v, w = jax.random.uniform(rng, (3,))
+  return jp.array([
+      jp.sqrt(1 - u) * jp.sin(2 * jp.pi * v),
+      jp.sqrt(1 - u) * jp.cos(2 * jp.pi * v),
+      jp.sqrt(u) * jp.sin(2 * jp.pi * w),
+      jp.sqrt(u) * jp.cos(2 * jp.pi * w),
+  ])
+
 class ParaHandEnv(mjx_env.MjxEnv):
   
     def __init__(

@@ -152,15 +152,17 @@ class ParaHandReorient(ParaHandEnv):
         v_cube = jp.zeros(6)
         
         ten_len_xy=0.015
-
+        ctrl = jp.zeros(self.mjx_model.nu)
+        ctrl = ctrl.at[1:5].set(ten_len_xy)
+        
         # Set initial tendon lengths for thumb joints
         qpos = jp.concatenate([q_hand, q_cube])
         qvel = jp.concatenate([v_hand, v_cube])
-        data = mjx_env.make_data(
+        data = mjx.make_data(
             self._mj_model,
             qpos=qpos,
             qvel=qvel,
-            ctrl=q_hand,
+            ctrl=ctrl,
             mocap_pos=jp.array([-100.0, -100.0, -100.0]),  # Hide goal for task.
             impl=self._mjx_model.impl.value,
             nconmax=self._config.nconmax,

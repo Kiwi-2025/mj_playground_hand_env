@@ -1,0 +1,1 @@
+# May be useful in the future to register environments

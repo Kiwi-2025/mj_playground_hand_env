@@ -9,16 +9,11 @@ TASK_XML_FILES = {
 }
 
 # TODO: 确认自由度数量
-NQ = 32  # 5fingers × 4DOF + 6DOF(base) = 26 DOF (32 values due to quaternion)
-
-# 位置和速度自由度
-NQ_POS = 32  # 修改为32: 完整的位置状态向量长度 
-NQ_VEL = 31  # 修改为31: 速度状态向量长度(quaternion角速度用3个值)
-
-# 实际控制自由度
-NV = 26  # 修改为26: 实际物理自由度数量
-NU = 20  # 修改为20: 可控制的关节数量(只有手指关节)
-NT_FORCE=5
+NQ_POS = 32     # Number of Positions, 机器人系统的位置自由度数量
+NQ_VEL = 31     # Number of Velocities, 机器人系统的速度自由度数量
+NV = 16         # Number of Velocities, 机器人系统的速度自由度数量，表示机器人有16个关节
+NU = 16         # Number of Actuators, 机器人系统的执行器数量，表示机器人有16个执行器，在这里是说有16个motors
+NT_FORCE=5      # Number of Tactile Forces, 触觉传感器的数量，这里表示有5个触觉传感器，分别对应5根手指
 
 TACTILE_GEOM_NAMES = [
     f"{finger}_markerG_{i}_{j}"

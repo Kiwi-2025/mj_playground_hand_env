@@ -46,6 +46,26 @@ from mujoco_playground import wrapper
 from para_env import get_default_config, load, register_environment, get_domain_randomizer
 from para_env.config import params
 
+# @title Check if MuJoCo installation was successful
+
+import distutils.util
+import os
+import subprocess
+
+if subprocess.run('nvidia-smi').returncode:
+  raise RuntimeError(
+      'Cannot communicate with GPU. '
+      'Make sure you are using a GPU Colab runtime. '
+      'Go to the Runtime menu and select Choose runtime type.'
+  )
+
+# Tell XLA to use Triton GEMM, this improves steps/sec by ~30% on some GPUs
+xla_flags = os.environ.get("XLA_FLAGS", "")
+xla_flags += " --xla_gpu_triton_gemm_any=True"
+os.environ["XLA_FLAGS"] = xla_flags
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["MUJOCO_GL"] = "egl"
+
 # Load ParaHand Rotate environment
 env_name = "ParaHandReorient"
 env = load(env_name)
@@ -75,6 +95,7 @@ def progress(num_steps, metrics):
 
 #   display(plt.gcf())
 
+# fuck 这里只支持实现MLP，我要用CNN，我得重新实现一个CNN network_factory
 ppo_training_params = dict(ppo_params)
 network_factory = ppo_networks.make_ppo_networks
 if "network_factory" in ppo_params:
@@ -88,7 +109,7 @@ train_fn = functools.partial(
     ppo.train, **dict(ppo_training_params),
     network_factory=network_factory,
     progress_fn=progress,
-    seed=1
+    seed=42
 )
 
 make_inference_fn, params, metrics = train_fn(
@@ -100,24 +121,24 @@ print(f"time to train: {times[-1] - times[1]}")
 
 
 # Visualize trained agent in a rollout
-jit_reset = jax.jit(env.reset)
-jit_step = jax.jit(env.step)
-jit_inference_fn = jax.jit(make_inference_fn(params, deterministic=True))
+# jit_reset = jax.jit(env.reset)
+# jit_step = jax.jit(env.step)
+# jit_inference_fn = jax.jit(make_inference_fn(params, deterministic=True))
 
-rng = jax.random.PRNGKey(42)
-rollout = []
-n_episodes = 1
+# rng = jax.random.PRNGKey(42)
+# rollout = []
+# n_episodes = 1
 
-for _ in range(n_episodes):
-  state = jit_reset(rng)
-  rollout.append(state)
-  for i in range(env_cfg.episode_length):
-    act_rng, rng = jax.random.split(rng)
-    ctrl, _ = jit_inference_fn(state.obs, act_rng)
-    state = jit_step(state, ctrl)
-    rollout.append(state)
+# for _ in range(n_episodes):
+#   state = jit_reset(rng)
+#   rollout.append(state)
+#   for i in range(env_cfg.episode_length):
+#     act_rng, rng = jax.random.split(rng)
+#     ctrl, _ = jit_inference_fn(state.obs, act_rng)
+#     state = jit_step(state, ctrl)
+#     rollout.append(state)
 
-render_every = 1
-frames = env.render(rollout[::render_every])
-rewards = [s.reward for s in rollout]
-media.show_video(frames, fps=1.0 / env.dt / render_every)
+# render_every = 1
+# frames = env.render(rollout[::render_every])
+# rewards = [s.reward for s in rollout]
+# media.show_video(frames, fps=1.0 / env.dt / render_every)

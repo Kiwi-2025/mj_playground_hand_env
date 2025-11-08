@@ -18,27 +18,28 @@ def brax_ppo_config(
         action_repeat=env_config.action_repeat,
         reward_scaling=1.0,
         network_factory=config_dict.create(
-            policy_hidden_layer_sizes=(32, 32, 32, 32),
-            value_hidden_layer_sizes=(256, 256, 256, 256, 256),
+            policy_hidden_layer_sizes=(128, 64),
+            value_hidden_layer_sizes=(128, 64),
             policy_obs_key="state",
             value_obs_key="state",
+            activation="linen.relu"
         ),
     )
     
     # 根据环境名称添加特定参数
     if env_name == "ParaHandReorient":
         rl_config.update(
-            num_resets_per_eval=10,
-            num_timesteps=10_000_000,
-            num_evals=10,
-            num_envs=2048,
-            batch_size=1024,
+            num_resets_per_eval=1,
+            num_timesteps=100_000_000,
+            num_evals=20,
+            num_envs=8,#先放少一些
+            batch_size=8,#先放少一些
             num_minibatches=32,
-            num_updates_per_batch=4,
+            num_updates_per_batch=5,
             learning_rate=3e-4,
             entropy_cost=1e-2,
             discounting=0.97,
-            unroll_length=10,
+            unroll_length=5,
             max_devices_per_host=8,
         )
     # 可以根据需要添加更多环境的配置
@@ -57,5 +58,9 @@ def brax_ppo_config(
     #         unroll_length=5,
     #         max_devices_per_host=4,
     #     )
+    
+    
+    else:
+        raise ValueError(f"No RL config found for environment: {env_name}")
   
     return rl_config

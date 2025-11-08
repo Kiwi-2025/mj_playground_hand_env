@@ -9,6 +9,10 @@ from mujoco_playground._src import mjx_env
 
 from para_env import reorient_env
 
+ALL_ENVS = (
+    "ParaHandReorient",
+)
+
 _envs = {
     "ParaHandReorient": reorient_env.ParaHandReorient,
 }
