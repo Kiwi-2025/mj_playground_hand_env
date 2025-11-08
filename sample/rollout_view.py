@@ -3,6 +3,16 @@
 
 import os, sys, time
 import gc
+
+from para_env.para_hand_env import TestTask
+from mujoco_playground import registry
+
+# 禁止 JAX 预分配全部显存，限制显存占比，避免 OOM
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.3"
+# 强制使用 GPU 进行推理
+os.environ["JAX_PLATFORM_NAME"] = "gpu"
+
 gc.collect()
 import jax
 import jax.numpy as jp
@@ -10,11 +20,6 @@ import mujoco as mj
 from mujoco import mjx
 import mediapy as media
 
-from para_env.para_hand_env import TestTask
-from mujoco_playground import registry
-
-# 强制使用 GPU 进行推理
-os.environ["JAX_PLATFORM_NAME"] = "gpu"
 
 env = TestTask()
 jit_reset = jax.jit(env.reset)
@@ -41,17 +46,28 @@ rollout = [state]
 index_quats = []
 index_pos = []
 index_tendon_lengths = []
+<<<<<<< HEAD:sample/rollout_view.py
 total_steps = 400  # 总仿真步数
+=======
+total_steps = 1500  # 总仿真步数
+>>>>>>> 334cf9442ce1a4c95904b16ff3aa7a7ed6743d4e:rollout_view.py
 
 ctrl = ctrl.at[5].set(-15) 
 for i in range(total_steps):
      state = jit_step(state, ctrl)
+     state_host = jax.device_get(state)
      # middle_quats.append(env.get_finger_quat(state.data, "middle"))
-     index_pos.append(env.get_finger_pos(state.data, "index"))
-     index_quats.append(env.get_finger_quat(state.data, "index"))
-     index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
-     rollout.append(state)
+     index_pos.append(env.get_finger_pos(state_host.data, "index"))
+     index_quats.append(env.get_finger_quat(state_host.data, "index"))
+     index_tendon_lengths.append(env.get_tendon_length(state_host.data, "index_tendon"))
+     
+     frame = env.render([state_host], height=480, width=640, camera=camera)[0]
+     frames.append(frame)
 
+     if (i % 200) == 0:
+          gc.collect()
+
+<<<<<<< HEAD:sample/rollout_view.py
 # ctrl = ctrl.at[5].set(0) # 放松index tendon
 # for _ in range(total_steps):
 #      state = jit_step(state, ctrl)
@@ -59,6 +75,21 @@ for i in range(total_steps):
 #      index_quats.append(env.get_finger_quat(state.data, "index"))
 #      index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
 #      rollout.append(state)
+=======
+ctrl = ctrl.at[5].set(0) # 放松index tendon
+for _ in range(total_steps):
+     state = jit_step(state, ctrl)
+     state_host = jax.device_get(state)
+     index_pos.append(env.get_finger_pos(state_host.data, "index"))
+     index_quats.append(env.get_finger_quat(state_host.data, "index"))
+     index_tendon_lengths.append(env.get_tendon_length(state_host.data, "index_tendon"))
+     
+     frame = env.render([state_host], height=480, width=640, camera=camera)[0]
+     frames.append(frame)
+
+     if (i % 200) == 0:
+          gc.collect()
+>>>>>>> 334cf9442ce1a4c95904b16ff3aa7a7ed6743d4e:rollout_view.py
 
 # 保存四元数数据到本地文件
 # jp.save("./middle_finger_quats.npy", jp.stack(middle_quats))
@@ -66,7 +97,7 @@ jp.save("./data/index_finger_pos.npy", jp.stack(index_pos))
 jp.save("./data/index_finger_quats.npy", jp.stack(index_quats))
 jp.save("./data/index_tendon_lengths.npy", jp.stack(index_tendon_lengths))
 
-frames = env.render(rollout, height=480, width=640, camera=camera)
+# frames = env.render(rollout, height=480, width=640, camera=camera)
 output_path = f"./video/sim2real.mp4"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 media.write_video(output_path, frames, fps=30)
