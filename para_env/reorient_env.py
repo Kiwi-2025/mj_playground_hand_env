@@ -158,12 +158,11 @@ class ParaHandReorient(ParaHandEnv):
         # Set initial tendon lengths for thumb joints
         qpos = jp.concatenate([q_hand, q_cube])
         qvel = jp.concatenate([v_hand, v_cube])
-        data = mjx.make_data(
+        data = mjx_env.make_data(
             self._mj_model,
             qpos=qpos,
             qvel=qvel,
             ctrl=ctrl,
-            mocap_pos=jp.array([-100.0, -100.0, -100.0]),  # Hide goal for task.
             impl=self._mjx_model.impl.value,
             nconmax=self._config.nconmax,
             njmax=self._config.njmax,
@@ -186,7 +185,8 @@ class ParaHandReorient(ParaHandEnv):
         metrics["steps_since_last_success"] = 0
         metrics["success_count"] = 0
 
-        obs_history = jp.zeros((self._config.history_len, self.observation_size))
+        # obs_history存在循环递归计算的问题，暂时先不使用
+        # obs_history = jp.zeros((self._config.history_len, self.observation_size))
         obs = self._get_obs(data, info)
         reward, done = jp.zeros(2)
 
@@ -223,7 +223,7 @@ class ParaHandReorient(ParaHandEnv):
         return fall_termination | nans
 
     def _get_obs(
-        self, data: mjx.Data, info: dict[str, Any], obs_history: jax.Array
+        self, data: mjx.Data, info: dict[str, Any]
     ) -> mjx_env.Observation:
         joint_qpos = data.qpos[self._hand_qids]
         info["rng"], noise_rng = jax.random.split(info["rng"])
@@ -240,8 +240,6 @@ class ParaHandReorient(ParaHandEnv):
             # noisy_joint_qpos,
             info["last_act"],
         ])
-        obs_history = jp.roll(obs_history, state.size)
-        obs_history = obs_history.at[: state.size].set(state)
         
         # all these functions should be defined in the base class, and necessary sensors should be added to the xml
         cube_pos = self.get_cube_position(data)
@@ -252,7 +250,7 @@ class ParaHandReorient(ParaHandEnv):
         cube_linvel = self.get_cube_linvel(data)
         fingertip_positions = self.get_fingertip_positions(data)
     
-        privileged_state = jp.concatenate([
+        state = jp.concatenate([
             state,
             joint_qpos,
             data.qvel[self._hand_dqids],
@@ -264,8 +262,8 @@ class ParaHandReorient(ParaHandEnv):
         ])
     
         return {
-            "state": obs_history,
-            "privileged_state": privileged_state,
+            **self.get_tactile_info(data),
+            "state": state,
         }
 
     def _get_reward(
@@ -375,7 +373,7 @@ class ParaHandReorient(ParaHandEnv):
     
     def get_palm_position(self, data:mjx.Data) -> jax.Array:
         """获取手掌的位置表示"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "palm_frame_origin_pos")
+        return mjx_env.get_sensor_data(self.mj_model, data, "palm_pos")
     
     # Tactile sensor processing
     def _find_contact_indices(self, data: mjx.Data) -> tuple[jax.Array, jax.Array]:
@@ -487,8 +485,9 @@ class ParaHandReorient(ParaHandEnv):
         Dictionary mapping finger name to contact forces
         """
         # Directly create the grid coordinates
-        x = jp.tile(jp.arange(9) * 0.001, 9)
-        y = jp.repeat(jp.arange(9) * 0.001, 9)
+        # TODO: 如果你更换了tactile传感器的排列方式，这里也需要相应修改
+        x = jp.tile(jp.arange(5) * 0.001, 5)
+        y = jp.repeat(jp.arange(5) * 0.001, 5)
         grid = jp.stack([x, y], axis=1)
         
         # Compute finger forces in one step

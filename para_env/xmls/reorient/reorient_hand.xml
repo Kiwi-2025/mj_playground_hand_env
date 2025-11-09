@@ -852,6 +852,12 @@
     </actuator>
 
     <sensor>
+        <!-- cube sensor -->
+        <framepos name="cube_freejoint_frame_origin_pos" objtype="body" objname="cube"/>
+        <framequat name="cube_freejoint_frame_origin_quat" objtype="body" objname="cube"/>
+        <velocimeter name="cube_freejoint_linvel" site="cube_center"/>
+        <gyro name="cube_freejoint_angvel" site="cube_center"/>
+
         <!-- palm pos sensor -->
         <framepos name="palm_pos" objtype="body" objname="palm"/>
 

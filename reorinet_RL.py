@@ -47,8 +47,6 @@ from para_env import get_default_config, load, register_environment, get_domain_
 from para_env.config import params
 
 # @title Check if MuJoCo installation was successful
-
-import distutils.util
 import os
 import subprocess
 

@@ -1,4 +1,4 @@
-name: mjx_env
+name: para_hand_playground
 channels:
   - defaults
 dependencies:

@@ -22,7 +22,7 @@ def brax_ppo_config(
             value_hidden_layer_sizes=(128, 64),
             policy_obs_key="state",
             value_obs_key="state",
-            activation="linen.relu"
+            # activation=linen.relu
         ),
     )
     
