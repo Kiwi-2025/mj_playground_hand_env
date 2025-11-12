@@ -49,6 +49,8 @@ def default_config() -> config_dict.ConfigDict:
               action_rate=-0.001,
               joint_vel=0.0,
               energy=-1e-3,
+              is_success=10.0,
+              fail_terminate=0.0,
           ),
           success_reward=100.0,
       ),
@@ -128,6 +130,7 @@ class ParaHandReorient(ParaHandEnv):
         # Initialize default pose and limits
         home_key = self._mj_model.keyframe("home") # TODO: 确认home keyframe是否存在
         self._init_q = jp.array(home_key.qpos)
+        self._init_cube_pos = self._init_q[self._cube_qids][:3]
         self._default_pose = self._init_q[self._hand_qids]
         self._lowers, self._uppers = self.mj_model.actuator_ctrlrange.T
 
@@ -135,13 +138,15 @@ class ParaHandReorient(ParaHandEnv):
         # Randomizes hand pos
         rng, pos_rng, vel_rng = jax.random.split(rng, 3)
         q_hand = jp.zeros(consts.NQ_POS)
+        # jax.debug.print("q_hand shape:{}", q_hand.shape)
         # q_hand = jp.clip(
         #     self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ,)),
         #     self._lowers,
         #     self._uppers,
         # )
         v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
-
+        # jax.debug.print("v_hand shape:{}", v_hand.shape)
+        
         # Randomizes cube qpos and qvel
         rng, p_rng, quat_rng = jax.random.split(rng, 3)
         start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
@@ -158,6 +163,9 @@ class ParaHandReorient(ParaHandEnv):
         # Set initial tendon lengths for thumb joints
         qpos = jp.concatenate([q_hand, q_cube])
         qvel = jp.concatenate([v_hand, v_cube])
+        # jax.debug.print("reset qpos size:{}", qpos.shape)
+        # jax.debug.print("reset qvel size:{}", qvel.shape)
+        
         data = mjx_env.make_data(
             self._mj_model,
             qpos=qpos,
@@ -173,8 +181,8 @@ class ParaHandReorient(ParaHandEnv):
             "steps_since_last_success": 0,
             "success_count": 0,
             "ctrl_full": jp.zeros(self.mjx_model.nu),
-            "last_act": jp.zeros(15),
-            "last_last_act": jp.zeros(15),
+            "last_act": jp.zeros(consts.NU),
+            "last_last_act": jp.zeros(consts.NU),
             "last_cube_angvel": jp.zeros(3),
         }
 
@@ -196,8 +204,8 @@ class ParaHandReorient(ParaHandEnv):
         data = mjx_env.step(model=self.mjx_model,data=state.data,action=action)
         
         # get observations and done signal
-        obs = self._get_obs(data, state.info, state.obs["state"])
-        done = self._get_termination(data, state.info)
+        obs = self._get_obs(data, state.info)
+        done = self._get_termination(data)
 
         # get rewards
         rewards = self._get_reward(data, action, state.info, state.metrics, done)
@@ -227,6 +235,7 @@ class ParaHandReorient(ParaHandEnv):
     ) -> mjx_env.Observation:
         joint_qpos = data.qpos[self._hand_qids]
         info["rng"], noise_rng = jax.random.split(info["rng"])
+        
         # TODO： add noise to cube position and orientation
         # noisy_joint_qpos = (
         #     joint_qpos
@@ -287,7 +296,7 @@ class ParaHandReorient(ParaHandEnv):
         ori_error = 2 * jp.arccos(jp.clip(quat_diff[3], -1.0, 1.0))  # 姿态误差
         reward_orientation = (
             self._config.reward_config.scales.orientation
-            * (1 - reward.tolerance(ori_error, 0, 0.2, 1 / jp.pi))
+            * (1 - reward.tolerance(ori_error, bounds=(0, 0.2), margin=1 / jp.pi))
         )
 
         # 获取方块的位置误差
@@ -295,7 +304,7 @@ class ParaHandReorient(ParaHandEnv):
         cube_pos_mse = jp.linalg.norm(cube_pos - self._init_cube_pos)
         reward_position = (
             self._config.reward_config.scales.position
-            * (1 - reward.tolerance(cube_pos_mse, 0, 0.02, 10))
+            * (1 - reward.tolerance(cube_pos_mse, bounds=(0, 0.02), margin=10))
         )
 
         # 检查是否失败（方块掉落）
@@ -329,11 +338,11 @@ class ParaHandReorient(ParaHandEnv):
 
         # 奖励信息
         rewards = {
-            "reward_orientation": reward_orientation,
-            "reward_position": reward_position,
-            "reward_hand_pose": reward_hand_pose,
-            "reward_action_rate": reward_action_rate,
-            "reward_energy": reward_energy,
+            "orientation": reward_orientation,
+            "position": reward_position,
+            "hand_pose": reward_hand_pose,
+            "action_rate": reward_action_rate,
+            "energy": reward_energy,
             "fail_terminate": fail_terminate,
             "is_success": is_success,
         }
@@ -506,7 +515,8 @@ class ParaHandReorient(ParaHandEnv):
             data: MuJoCo data
         
         Returns:
-            Dictionary mapping finger name to contact forces
+            Dictionary mapping finger name to contact forces,
+            contact forces are forces object apply on those tac balls, with shape (n_tactile_per_finger, 5) 
         """
         # Find contact indices for tactile geoms
         contact_idx_valid, mask = self._find_contact_indices(data)

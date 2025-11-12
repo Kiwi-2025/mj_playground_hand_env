@@ -1,8 +1,8 @@
 # FILE: DOF_calc.py
 import mujoco
-import sys
+import os
 
-def calculate_dof(xml_path):
+def calculate_dof(xml_str):
     """
     Load a MuJoCo XML model and calculate its Degrees of Freedom (DOF).
     
@@ -14,7 +14,7 @@ def calculate_dof(xml_path):
     """
     try:
         # Load the MuJoCo model
-        model = mujoco.MjModel.from_xml_path(xml_path)
+        model = mujoco.MjModel.from_xml_string(xml_str)
         data = mujoco.MjData(model)
         
         # Calculate DOFs
@@ -26,7 +26,7 @@ def calculate_dof(xml_path):
         }
         
         # Print DOF information
-        print(f"DOF Information for {xml_path}:")
+        print(f"DOF Information:")
         for key, value in dof_info.items():
             print(f"  {key}: {value}")
         
@@ -36,13 +36,12 @@ def calculate_dof(xml_path):
         return None
 
 if __name__ == "__main__":
-    # Check if the XML file path is provided
-    if len(sys.argv) < 2:
-        print("Usage: python DOF_calc.py <path_to_xml>")
-        sys.exit(1)
     
-    # Get the XML file path from the command line
-    xml_file = sys.argv[1]
-    
-    # Calculate DOF
+    os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/reorient/reorient_hand.xml", "r") as f:
+        # xml_file = f.read()
+    with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/old/box_tac_5x5.xml", "r") as f:
+        xml_file = f.read()
+        
+        
     calculate_dof(xml_file)
