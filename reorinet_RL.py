@@ -61,6 +61,7 @@ if subprocess.run('nvidia-smi').returncode:
 xla_flags = os.environ.get("XLA_FLAGS", "")
 xla_flags += " --xla_gpu_triton_gemm_any=True"
 os.environ["XLA_FLAGS"] = xla_flags
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".50"  # 限制使用 50% GPU 内存
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["MUJOCO_GL"] = "egl"
 
@@ -93,7 +94,6 @@ def progress(num_steps, metrics):
 
 #   display(plt.gcf())
 
-# fuck 这里只支持实现MLP，我要用CNN，我得重新实现一个CNN network_factory
 ppo_training_params = dict(ppo_params)
 network_factory = ppo_networks.make_ppo_networks
 if "network_factory" in ppo_params:

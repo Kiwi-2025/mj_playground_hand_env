@@ -1,0 +1,1 @@
+tensorboard --logdir /home/rvsa/mj_playground_hand_env/logs/ --port 6006

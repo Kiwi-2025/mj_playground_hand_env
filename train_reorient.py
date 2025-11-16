@@ -29,6 +29,7 @@ import tensorboardX
 import wandb
 
 import para_env
+from para_env.config import params
 
 
 xla_flags = os.environ.get("XLA_FLAGS", "")
@@ -152,8 +153,9 @@ _TRAINING_METRICS_STEPS = flags.DEFINE_integer(
 
 
 def get_rl_config(env_name: str) -> config_dict.ConfigDict:
+    print(f"env_name:{env_name}")
     if env_name in para_env.ALL_ENVS:
-        return para_env.config.params.brax_ppo_config(env_name, _IMPL.value)
+        return params.brax_ppo_config(env_name, _IMPL.value)
         
     raise ValueError(f"Env {env_name} not found in {para_env.ALL_ENVS}.")
 
@@ -269,8 +271,13 @@ def main(argv):
     wandb.config.update({"env_name": _ENV_NAME.value})
 
   # Initialize TensorBoard if required
+  print(f"_USE_TB.value: {_USE_TB.value}, _PLAY_ONLY.value: {_PLAY_ONLY.value}")
   if _USE_TB.value and not _PLAY_ONLY.value:
     writer = tensorboardX.SummaryWriter(logdir)
+    device_count = jax.local_device_count()
+    writer.add_scalar("startup/step0", 0.0, 0)
+    print(f"[TB] writer ready, device_count={device_count}")
+    writer.flush()
 
   # Handle checkpoint loading
   if _LOAD_CHECKPOINT_PATH.value is not None:
@@ -360,11 +367,13 @@ def main(argv):
     if _USE_WANDB.value and not _PLAY_ONLY.value:
       wandb.log(metrics, step=num_steps)
 
-    # Log to TensorBoard
+    # Log to TensorBoard, 写入 metrics 中的参数
     if _USE_TB.value and not _PLAY_ONLY.value:
       for key, value in metrics.items():
         writer.add_scalar(key, value, num_steps)
       writer.flush()
+      print(f"Logged metrics to TensorBoard at step {num_steps}.")
+
     if _RUN_EVALS.value:
       print(f"{num_steps}: reward={metrics['eval/episode_reward']:.3f}")
     if _LOG_TRAINING_METRICS.value:
@@ -413,6 +422,7 @@ def main(argv):
       rscope_handle.dump_rollout(params)
 
   # Train or load the model
+  print("Starting training...")
   make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
       environment=env,
       progress_fn=progress,

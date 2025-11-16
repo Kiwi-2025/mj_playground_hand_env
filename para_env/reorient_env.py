@@ -189,6 +189,7 @@ class ParaHandReorient(ParaHandEnv):
         metrics = {}
         for k in self._config.reward_config.scales.keys():
             metrics[f"reward/{k}"] = jp.zeros(())
+        metrics["reward/total"] = jp.zeros((),dtype=float)
         metrics["reward/success"] = jp.zeros((), dtype=float)
         metrics["steps_since_last_success"] = 0
         metrics["success_count"] = 0
@@ -212,8 +213,16 @@ class ParaHandReorient(ParaHandEnv):
         reward = {
             k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
         } # scale rewards with config scales constatnts
-        reward = sum(reward.values()) * self.dt  # total reward
         
+        # update metrics
+        for k, v in reward.items():
+            state.metrics[f"reward/{k}"] = v
+        state.metrics["steps_since_last_success"] = state.info["steps_since_last_success"]
+        state.metrics["success_count"] = state.info["success_count"]
+        # update total reward metrics
+        reward = sum(reward.values()) * self.dt  # total reward
+        state.metrics["reward/total"] = reward
+
         done = done.astype(reward.dtype)
         state = state.replace(data=data, obs=obs, reward=reward, done=done)
         return state
