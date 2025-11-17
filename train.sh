@@ -3,12 +3,10 @@ python train_reorient.py \
   --use_tb \
   --num_envs=4 \
   --num_timesteps=2000 \
-  --episode_length=200 \
-  --unroll_length=5 \
+  --episode_length=256 \
+  --unroll_length=8 \
   --num_minibatches=2 \
   --num_updates_per_batch=2 \
-  --batch_size=128 \
+  --batch_size=32 \
   --policy_hidden_layer_sizes=32,32 \
   --value_hidden_layer_sizes=32,32 \
-  --learning_rate=1e-3 \
-  --clipping_epsilon=0.2

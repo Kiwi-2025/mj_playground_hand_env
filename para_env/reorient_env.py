@@ -253,6 +253,7 @@ class ParaHandReorient(ParaHandEnv):
         #     * self._config.noise_config.scales.joint_pos
         # ) # add some noise to joint positions
 
+        # 策略网络所能够观察到的状态
         state = jp.concatenate([
             joint_qpos,
             # noisy_joint_qpos,
@@ -268,7 +269,8 @@ class ParaHandReorient(ParaHandEnv):
         cube_linvel = self.get_cube_linvel(data)
         fingertip_positions = self.get_fingertip_positions(data)
     
-        state = jp.concatenate([
+        # 供价值网络用于估算价值所需要的完整状态
+        previlidged_state = jp.concatenate([
             state,
             joint_qpos,
             data.qvel[self._hand_dqids],
@@ -281,6 +283,7 @@ class ParaHandReorient(ParaHandEnv):
     
         return {
             **self.get_tactile_info(data),
+            "previlidged_state": previlidged_state,
             "state": state,
         }
 
@@ -299,9 +302,10 @@ class ParaHandReorient(ParaHandEnv):
         cube_ori = self.get_cube_orientation(data)
         # TODO: replace with a easily change goal orientation function
         # goal_ori = self.orientation_target  # 目标姿态
-        goal_ori = jp.array([1.0, 0.0, 0.0, 0.0])  # 假设目标姿态为单位四元数
+        # goal_ori = jp.array([1.0, 0.0, 0.0, 0.0])
+        goal_ori = jp.array([0.0, 0.0, 1.0, 0.0])   # 绕 z 轴旋转 180 度
         quat_diff = math.quat_mul(cube_ori, math.quat_inv(goal_ori))
-        quat_diff = quat_diff / jp.linalg.norm(quat_diff)
+        quat_diff = quat_diff / (jp.linalg.norm(quat_diff) + 1e-8)  # 归一化四元数，防止出现除0的情况
         ori_error = 2 * jp.arccos(jp.clip(quat_diff[3], -1.0, 1.0))  # 姿态误差
         reward_orientation = (
             self._config.reward_config.scales.orientation
@@ -343,7 +347,7 @@ class ParaHandReorient(ParaHandEnv):
 
         # 成功奖励（姿态误差小于阈值）
         is_success = ori_error < self._config.success_threshold
-        reward_success = self._config.reward_config.success_reward * is_success
+        is_success = self._config.reward_config.success_reward * is_success
 
         # 奖励信息
         rewards = {
@@ -525,7 +529,8 @@ class ParaHandReorient(ParaHandEnv):
         
         Returns:
             Dictionary mapping finger name to contact forces,
-            contact forces are forces object apply on those tac balls, with shape (n_tactile_per_finger, 5) 
+            contact forces are forces object apply on those tac balls, with shape [n_tactile_per_finger, 5].
+            For example, if we use 25 tac balls per finger, the shape will be [25, 5]
         """
         # Find contact indices for tactile geoms
         contact_idx_valid, mask = self._find_contact_indices(data)
