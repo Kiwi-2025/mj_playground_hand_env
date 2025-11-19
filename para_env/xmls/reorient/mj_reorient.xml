@@ -10,12 +10,6 @@
             qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
             qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" />
     </keyframe>
-    <default>
-        <geom solref="0.001 1" solimp="0.99 0.999 0.0001"/>
-        <default class="cube">
-            <geom friction=".3 0.05" conaffinity="2" condim="3"/>
-        </default>
-    </default>
     <option>
         <flag filterparent="disable"/>
     </option>
@@ -47,37 +41,11 @@
         <mesh name="little_link_1" vertex="0.0 0.0 -0.0075 0.04 0.0 -0.0075 0.03 0.01 -0.0075 0.01 0.01 -0.0075 0.0 0.0 0.0075 0.04 0.0 0.0075 0.03 0.01 0.0075 0.01 0.01 0.0075" normal="-0.7734590803390136 -0.3203772410170408 -0.5469181606780271 0.7734590803390136 -0.3203772410170408 -0.5469181606780271 0.2971085791188998 0.7172835612062476 -0.6302624731310217 -0.2971085791188997 0.7172835612062475 -0.6302624731310217 -0.7734590803390136 -0.32037724101704074 0.5469181606780271 0.7734590803390138 -0.32037724101704057 0.5469181606780271 0.29710857911889976 0.7172835612062477 0.6302624731310216 -0.29710857911889976 0.7172835612062476 0.6302624731310217" face="1 0 3 3 2 1 7 4 5 5 6 7 5 4 1 1 4 0 6 5 2 2 5 1 4 7 0 0 7 3 7 6 3 3 6 2"/>
         <mesh name="little_link_2" vertex="0.0 0.0 -0.0075 0.025 0.0 -0.0075 0.0175 0.01 -0.0075 0.007500000000000001 0.01 -0.0075 0.0 0.0 0.0075 0.025 0.0 0.0075 0.0175 0.01 0.0075 0.007500000000000001 0.01 0.0075" normal="-0.7464925414001442 -0.3732462707000721 -0.5508503490444955 0.7464925414001442 -0.3732462707000721 -0.5508503490444956 0.351257248032334 0.702514496064668 -0.618944043128098 -0.351257248032334 0.702514496064668 -0.618944043128098 -0.7464925414001442 -0.3732462707000721 0.5508503490444955 0.7464925414001442 -0.373246270700072 0.5508503490444956 0.351257248032334 0.7025144960646681 0.618944043128098 -0.351257248032334 0.702514496064668 0.618944043128098" face="1 0 3 3 2 1 7 4 5 5 6 7 5 4 1 1 4 0 6 5 2 2 5 1 4 7 0 0 7 3 7 6 3 3 6 2"/>
         <mesh name="little_link_3" vertex="0.0 0.0 -0.0075 0.025 0.0 -0.0075 0.0175 0.01 -0.0075 0.007500000000000001 0.01 -0.0075 0.0 0.0 0.0075 0.025 0.0 0.0075 0.0175 0.01 0.0075 0.007500000000000001 0.01 0.0075" normal="-0.7464925414001442 -0.3732462707000721 -0.5508503490444955 0.7464925414001442 -0.3732462707000721 -0.5508503490444956 0.351257248032334 0.702514496064668 -0.618944043128098 -0.351257248032334 0.702514496064668 -0.618944043128098 -0.7464925414001442 -0.3732462707000721 0.5508503490444955 0.7464925414001442 -0.373246270700072 0.5508503490444956 0.351257248032334 0.7025144960646681 0.618944043128098 -0.351257248032334 0.702514496064668 0.618944043128098" face="1 0 3 3 2 1 7 4 5 5 6 7 5 4 1 1 4 0 6 5 2 2 5 1 4 7 0 0 7 3 7 6 3 3 6 2"/>
-        <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="1 1 1" rgb2="0 0 0" markrgb="0 0 0" width="300" height="300"/>
-        <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0"/>
-        <texture name="cube" type="cube" fileup="./para_env/xmls/reorient/reorientation_cube_textures/fileup.png"
-            fileback="./para_env/xmls/reorient/reorientation_cube_textures/fileback.png" filedown="./para_env/xmls/reorient/reorientation_cube_textures/filedown.png"
-            filefront="./para_env/xmls/reorient/reorientation_cube_textures/filefront.png" fileleft="./para_env/xmls/reorient/reorientation_cube_textures/fileleft.png"
-            fileright="./para_env/xmls/reorient/reorientation_cube_textures/fileright.png"/>
-        <material name="cube" texture="cube"/>
-        <texture name="graycube" type="cube" fileup="./para_env/xmls/reorient/reorientation_cube_textures/grayup.png"
-            fileback="./para_env/xmls/reorient/reorientation_cube_textures/grayback.png" filedown="./para_env/xmls/reorient/reorientation_cube_textures/graydown.png"
-            filefront="./para_env/xmls/reorient/reorientation_cube_textures/grayfront.png" fileleft="./para_env/xmls/reorient/reorientation_cube_textures/grayleft.png"
-            fileright="./para_env/xmls/reorient/reorientation_cube_textures/grayright.png"/>
-        <material name="graycube" texture="graycube"/>
-        <texture name="dexcube" type="2d" file="./para_env/xmls/reorient/reorientation_cube_textures/dex_cube.png"/>
-        <material name="dexcube" texture="dexcube"/>
-        <mesh name="cube_mesh" file="./para_env/xmls/reorient/meshes/dex_cube.obj" scale="0.035 0.035 0.035"/>
     </asset>
     <option gravity="0 0 -9.81"/>
     <!-- 导入小道具 cube 的xml文件 -->
-    <!-- <include file="./reorientation_cube.xml"/> -->
-    <!-- <include file="/home/rvsa/mj_playground_hand_env/para_env/xmls/cube/reo"> -->
+    <include file="./reorientation_cube.xml"/>
     <worldbody>
-        <!-- 一些辅助元素 -->
-        <!-- <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="1" friction="1 0.05 0.05" solref="0.001 1" solimp="0.98 0.99 0.001"/> -->
-        <!-- <site name="target" size="0.01" rgba="0 0 .9 1" pos="0 0 .2"/> -->
-        <!-- cube 的定义 -->
-        <body name="cube" pos="0.0 0.0 0.23" quat="1 0 0 0" childclass="cube">
-            <freejoint name="cube_freejoint"/>
-            <geom type="mesh" mesh="cube_mesh" material="dexcube" contype="0" conaffinity="0" density="0" group="2"/>
-            <geom name="cube" type="box" size=".035 .035 .035" mass=".108" group="3"/>
-            <site name="cube_center" pos="0 0 0" group="4"/>
-        </body>
         <!-- 手的定义 -->
         <body name="palm" pos="0 0 0.15" euler="3.14 3.14 0">
             <joint name="palm_slide_x" type="slide" axis="1 0 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>

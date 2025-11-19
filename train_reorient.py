@@ -275,7 +275,7 @@ def main(argv):
   if _USE_TB.value and not _PLAY_ONLY.value:
     writer = tensorboardX.SummaryWriter(logdir)
     device_count = jax.local_device_count()
-    writer.add_scalar("startup/step0", 0.0, 0)
+    # writer.add_scalar("startup/step0", 0.0, 0)
     print(f"[TB] writer ready, device_count={device_count}")
     writer.flush()
 

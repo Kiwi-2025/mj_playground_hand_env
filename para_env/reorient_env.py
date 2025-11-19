@@ -47,7 +47,7 @@ def default_config() -> config_dict.ConfigDict:
               termination=-100.0,
               hand_pose=-0.5,
               action_rate=-0.001,
-              joint_vel=0.0,
+            #   joint_vel=0.0,
               energy=-1e-3,
               is_success=10.0,
               fail_terminate=0.0,
@@ -85,30 +85,30 @@ class ParaHandReorient(ParaHandEnv):
         self._post_init()
     
     def _post_init(self) -> None:
-        # 创建一个15x18的变换矩阵（15维动作→18维控制）
-        action_to_ctrl_matrix = jp.zeros((15, self.mjx_model.nu))
-        # 设置映射关系
-        # 欠驱动绳索映射
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[0, 0].set(1.0)                    # 控制0
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[1:5, [5,7,8,10]].set(jp.eye(4))   # 控制5,7,8,10
-        # 拇指关节映射
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[5, 1].set(1.0)                    # 控制1
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[5, 2].set(-1.0)                   # 控制2，反向
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[6, 3].set(1.0)                    # 控制3
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[6, 4].set(-1.0)                   # 控制4，反向
-        # 侧摆映射
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[7, 6].set(1.0)                    # 控制6
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[8, 9].set(1.0)                    # 控制9
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[8, 11].set(1.5)                   # 控制11，1.5倍
-        # 手掌映射
-        action_to_ctrl_matrix = action_to_ctrl_matrix.at[9:15, 12:18].set(jp.eye(6))       # 控制12-17
-        self._action_to_ctrl_matrix = action_to_ctrl_matrix
+        # # 创建一个15x18的变换矩阵（15维动作→18维控制）
+        # action_to_ctrl_matrix = jp.zeros((15, self.mjx_model.nu))
+        # # 设置映射关系
+        # # 欠驱动绳索映射
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[0, 0].set(1.0)                    # 控制0
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[1:5, [5,7,8,10]].set(jp.eye(4))   # 控制5,7,8,10
+        # # 拇指关节映射
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[5, 1].set(1.0)                    # 控制1
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[5, 2].set(-1.0)                   # 控制2，反向
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[6, 3].set(1.0)                    # 控制3
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[6, 4].set(-1.0)                   # 控制4，反向
+        # # 侧摆映射
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[7, 6].set(1.0)                    # 控制6
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[8, 9].set(1.0)                    # 控制9
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[8, 11].set(1.5)                   # 控制11，1.5倍
+        # # 手掌映射
+        # action_to_ctrl_matrix = action_to_ctrl_matrix.at[9:15, 12:18].set(jp.eye(6))       # 控制12-17
+        # self._action_to_ctrl_matrix = action_to_ctrl_matrix
         
         # get ids for relevant joints and geoms
         self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.JOINT_NAMES)
         self._hand_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.JOINT_NAMES)
         self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
-        self._floor_geom_id = self._mj_model.geom("floor").id
+        # self._floor_geom_id = self._mj_model.geom("floor").id
         self._cube_geom_id = self._mj_model.geom("cube").id
         # debug info
         # print("hand qpos ids num:", self._hand_qids.shape)
@@ -128,8 +128,9 @@ class ParaHandReorient(ParaHandEnv):
         self._tactile_geom_body_ids = [self._mj_model.body(name).id for name in consts.TACTILE_BODY_NAMES]
         
         # Initialize default pose and limits
-        home_key = self._mj_model.keyframe("home") # TODO: 确认home keyframe是否存在
+        home_key = self._mj_model.keyframe("home")
         self._init_q = jp.array(home_key.qpos)
+        # jax.debug.print("init qpos: {}", self._init_q)
         self._init_cube_pos = self._init_q[self._cube_qids][:3]
         self._default_pose = self._init_q[self._hand_qids]
         self._lowers, self._uppers = self.mj_model.actuator_ctrlrange.T
@@ -144,37 +145,51 @@ class ParaHandReorient(ParaHandEnv):
         #     self._lowers,
         #     self._uppers,
         # )
-        v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
+        # v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
+        v_hand = jp.zeros(consts.NV)
         # jax.debug.print("v_hand shape:{}", v_hand.shape)
         
         # Randomizes cube qpos and qvel
         rng, p_rng, quat_rng = jax.random.split(rng, 3)
-        start_pos = jp.array([0.1, 0.0, 0.05]) + jax.random.uniform(
-            p_rng, (3,), minval=-0.01, maxval=0.01
-        )     
-        start_quat = para_hand_base.uniform_quat(quat_rng)
+        # start_pos = jp.array([0.1, 0.0, 0.2]) + jax.random.uniform(
+        #     p_rng, (3,), minval=-0.01, maxval=0.01
+        # )
+        # start_quat = para_hand_base.uniform_quat(quat_rng)
+        
+        # 固定初始位置和姿态进行测试
+        start_pos = jp.array([0.0, 0.0, 0.23])
+        start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
         q_cube = jp.array([*start_pos, *start_quat])
         v_cube = jp.zeros(6)
         
         ten_len_xy=0.015
-        ctrl = jp.zeros(self.mjx_model.nu)
-        ctrl = ctrl.at[1:5].set(ten_len_xy)
+        ctrl = jp.zeros((self.mjx_model.nu,))
+        # ctrl = ctrl.at[1:5].set(ten_len_xy)
         
         # Set initial tendon lengths for thumb joints
         qpos = jp.concatenate([q_hand, q_cube])
         qvel = jp.concatenate([v_hand, v_cube])
-        # jax.debug.print("reset qpos size:{}", qpos.shape)
-        # jax.debug.print("reset qvel size:{}", qvel.shape)
+
+        jax.debug.print("reset qpos :{}", qpos)
+        jax.debug.print("reset qvel :{}", qvel)
+        jax.debug.print("reset ctrl :{}", ctrl)
         
-        data = mjx_env.make_data(
-            self._mj_model,
+        data = mjx.make_data(self.mj_model)
+        data = data.replace(
             qpos=qpos,
             qvel=qvel,
-            ctrl=ctrl,
-            impl=self._mjx_model.impl.value,
-            nconmax=self._config.nconmax,
-            njmax=self._config.njmax,
+            ctrl=ctrl
         )
+        # data = mjx_env.make_data(
+        #     self._mj_model,
+        #     qpos=qpos,
+        #     qvel=qvel,
+        #     ctrl=ctrl,
+        #     impl=self._mjx_model.impl.value,
+        #     nconmax=self._config.nconmax,
+        #     njmax=self._config.njmax,
+        # )
+        
         info = {
             "rng": rng,
             "step": 0,
@@ -190,9 +205,9 @@ class ParaHandReorient(ParaHandEnv):
         for k in self._config.reward_config.scales.keys():
             metrics[f"reward/{k}"] = jp.zeros(())
         metrics["reward/total"] = jp.zeros((),dtype=float)
-        metrics["reward/success"] = jp.zeros((), dtype=float)
-        metrics["steps_since_last_success"] = 0
-        metrics["success_count"] = 0
+        # metrics["reward/success"] = jp.zeros((), dtype=float)
+        # metrics["steps_since_last_success"] = 0
+        # metrics["success_count"] = 0
 
         # obs_history存在循环递归计算的问题，暂时先不使用
         # obs_history = jp.zeros((self._config.history_len, self.observation_size))
@@ -217,8 +232,8 @@ class ParaHandReorient(ParaHandEnv):
         # update metrics
         for k, v in reward.items():
             state.metrics[f"reward/{k}"] = v
-        state.metrics["steps_since_last_success"] = state.info["steps_since_last_success"]
-        state.metrics["success_count"] = state.info["success_count"]
+        # state.metrics["steps_since_last_success"] = state.info["steps_since_last_success"]
+        # state.metrics["success_count"] = state.info["success_count"]
         # update total reward metrics
         reward = sum(reward.values()) * self.dt  # total reward
         state.metrics["reward/total"] = reward
@@ -270,7 +285,7 @@ class ParaHandReorient(ParaHandEnv):
         fingertip_positions = self.get_fingertip_positions(data)
     
         # 供价值网络用于估算价值所需要的完整状态
-        previlidged_state = jp.concatenate([
+        privileged_state = jp.concatenate([
             state,
             joint_qpos,
             data.qvel[self._hand_dqids],
@@ -282,8 +297,8 @@ class ParaHandReorient(ParaHandEnv):
         ])
     
         return {
-            **self.get_tactile_info(data),
-            "previlidged_state": previlidged_state,
+            # **self.get_tactile_info(data),
+            "privileged_state": privileged_state,
             "state": state,
         }
 
@@ -557,7 +572,8 @@ class ParaHandReorient(ParaHandEnv):
     @property
     def xml_path(self) -> str:
         # 返回 XML 文件路径
-        return consts.PARA_HAND_XML.as_posix()
+        return consts.TASK_XML_FILES["reorient"].as_posix()
+        # return consts.PARA_HAND_XML.as_posix()
     
     @property
     def action_size(self) -> int:
