@@ -1,0 +1,12 @@
+python ../train_reorient.py \
+    --env_name=ParaHandReorient \
+    --play_only \
+    --num_envs=4 \
+    --num_timesteps=10 \
+    --episode_length=32 \
+    --unroll_length=8 \
+    --num_minibatches=2 \
+    --num_updates_per_batch=2 \
+    --batch_size=32 \
+    --policy_hidden_layer_sizes=32,32 \
+    --value_hidden_layer_sizes=32,32 \

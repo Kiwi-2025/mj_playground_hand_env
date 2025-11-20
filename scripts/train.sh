@@ -1,9 +1,9 @@
-python train_reorient.py \
+python ../train_reorient.py \
   --env_name=ParaHandReorient \
   --use_tb \
   --num_envs=4 \
-  --num_timesteps=2000 \
-  --episode_length=256 \
+  --num_timesteps=10 \
+  --episode_length=32 \
   --unroll_length=8 \
   --num_minibatches=2 \
   --num_updates_per_batch=2 \

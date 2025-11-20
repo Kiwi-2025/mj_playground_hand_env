@@ -43,14 +43,14 @@ def default_config() -> config_dict.ConfigDict:
       reward_config=config_dict.create(
           scales=config_dict.create(
               orientation=5.0,
-              position=0.5,
-              termination=-100.0,
-              hand_pose=-0.5,
-              action_rate=-0.001,
+            #   position=0.5,
+            #   termination=-100.0,
+            #   hand_pose=-0.5,
+            #   action_rate=-0.001,
             #   joint_vel=0.0,
-              energy=-1e-3,
-              is_success=10.0,
-              fail_terminate=0.0,
+            #   energy=-1e-3,
+            #   is_success=10.0,
+            #   fail_terminate=0.0,
           ),
           success_reward=100.0,
       ),
@@ -130,23 +130,36 @@ class ParaHandReorient(ParaHandEnv):
         # Initialize default pose and limits
         home_key = self._mj_model.keyframe("home")
         self._init_q = jp.array(home_key.qpos)
-        # jax.debug.print("init qpos: {}", self._init_q)
-        self._init_cube_pos = self._init_q[self._cube_qids][:3]
+        self._init_q_vel = jp.array(home_key.qvel)
+
         self._default_pose = self._init_q[self._hand_qids]
+        self._default_hand_vel = self._init_q_vel[self._hand_qids]
+        self._init_cube_pos = self._init_q[self._cube_qids][:3]
+        self._init_cube_vel = self._init_q_vel[self._cube_qids][:3]
         self._lowers, self._uppers = self.mj_model.actuator_ctrlrange.T
+        
+        # DEBUG: print initial positions
+        # jax.debug.print("init qpos: {}", self._init_q)
+        # jax.debug.print("hand qid: {}", self._hand_qids)
+        # jax.debug.print("hand dqid: {}", self._hand_dqids)
+
 
     def reset(self, rng: jax.Array) -> mjx_env.State:
         # Randomizes hand pos
         rng, pos_rng, vel_rng = jax.random.split(rng, 3)
-        q_hand = jp.zeros(consts.NQ_POS)
-        # jax.debug.print("q_hand shape:{}", q_hand.shape)
+        
+        q_hand = self._default_pose
+        # q_hand = jp.zeros(consts.NQ_POS)
         # q_hand = jp.clip(
-        #     self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ,)),
+        #     self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ_POS,)),
         #     self._lowers,
         #     self._uppers,
         # )
+        # jax.debug.print("q_hand shape:{}", q_hand.shape)
+        
         # v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
-        v_hand = jp.zeros(consts.NV)
+        # v_hand = jp.zeros(consts.NV)
+        v_hand = self._default_hand_vel
         # jax.debug.print("v_hand shape:{}", v_hand.shape)
         
         # Randomizes cube qpos and qvel
@@ -157,7 +170,7 @@ class ParaHandReorient(ParaHandEnv):
         # start_quat = para_hand_base.uniform_quat(quat_rng)
         
         # 固定初始位置和姿态进行测试
-        start_pos = jp.array([0.0, 0.0, 0.23])
+        start_pos = jp.array([0.0, 0.0, 0.21])  # 手掌的上表面大概是 z=0.2
         start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
         q_cube = jp.array([*start_pos, *start_quat])
         v_cube = jp.zeros(6)
@@ -170,25 +183,19 @@ class ParaHandReorient(ParaHandEnv):
         qpos = jp.concatenate([q_hand, q_cube])
         qvel = jp.concatenate([v_hand, v_cube])
 
-        jax.debug.print("reset qpos :{}", qpos)
-        jax.debug.print("reset qvel :{}", qvel)
-        jax.debug.print("reset ctrl :{}", ctrl)
+        # jax.debug.print("reset qpos :{}", qpos)
+        # jax.debug.print("reset qvel :{}", qvel)
+        # jax.debug.print("reset ctrl :{}", ctrl)
         
-        data = mjx.make_data(self.mj_model)
-        data = data.replace(
+        data = mjx_env.make_data(
+            self._mj_model,
             qpos=qpos,
             qvel=qvel,
-            ctrl=ctrl
+            ctrl=ctrl,
+            impl=self._mjx_model.impl.value,
+            nconmax=self._config.nconmax,
+            njmax=self._config.njmax,
         )
-        # data = mjx_env.make_data(
-        #     self._mj_model,
-        #     qpos=qpos,
-        #     qvel=qvel,
-        #     ctrl=ctrl,
-        #     impl=self._mjx_model.impl.value,
-        #     nconmax=self._config.nconmax,
-        #     njmax=self._config.njmax,
-        # )
         
         info = {
             "rng": rng,
@@ -234,6 +241,7 @@ class ParaHandReorient(ParaHandEnv):
             state.metrics[f"reward/{k}"] = v
         # state.metrics["steps_since_last_success"] = state.info["steps_since_last_success"]
         # state.metrics["success_count"] = state.info["success_count"]
+
         # update total reward metrics
         reward = sum(reward.values()) * self.dt  # total reward
         state.metrics["reward/total"] = reward
@@ -248,11 +256,10 @@ class ParaHandReorient(ParaHandEnv):
         check whether episode is done, e.g. due to nan values or cube falling below floor
         """
         # check invalid velocities or poses
-        nans = jp.any(jp.isnan(data.qpos)) | jp.any(jp.isnan(data.qvel))
+        # nans = jp.any(jp.isnan(data.qpos)) | jp.any(jp.isnan(data.qvel))
         # check cube falling below floor
         fall_termination = self.get_cube_position(data)[2] < -0.05
-
-        return fall_termination | nans
+        return fall_termination
 
     def _get_obs(
         self, data: mjx.Data, info: dict[str, Any]
@@ -269,10 +276,12 @@ class ParaHandReorient(ParaHandEnv):
         # ) # add some noise to joint positions
 
         # 策略网络所能够观察到的状态
+        # TODO: 我认为触觉信息也应该解包后放在这里
         state = jp.concatenate([
             joint_qpos,
             # noisy_joint_qpos,
             info["last_act"],
+            # *self.get_tactile_info(data),
         ])
         
         # all these functions should be defined in the base class, and necessary sensors should be added to the xml
@@ -297,7 +306,7 @@ class ParaHandReorient(ParaHandEnv):
         ])
     
         return {
-            # **self.get_tactile_info(data),
+            # **self.get_tactile_info(data), # 我觉得触觉信息不应该放在这里
             "privileged_state": privileged_state,
             "state": state,
         }
@@ -317,62 +326,58 @@ class ParaHandReorient(ParaHandEnv):
         cube_ori = self.get_cube_orientation(data)
         # TODO: replace with a easily change goal orientation function
         # goal_ori = self.orientation_target  # 目标姿态
-        # goal_ori = jp.array([1.0, 0.0, 0.0, 0.0])
-        goal_ori = jp.array([0.0, 0.0, 1.0, 0.0])   # 绕 z 轴旋转 180 度
+        goal_ori = jp.array([0.0, 0.0, 0.0, 1.0])   # 绕 z 轴旋转 180 度
         quat_diff = math.quat_mul(cube_ori, math.quat_inv(goal_ori))
-        quat_diff = quat_diff / (jp.linalg.norm(quat_diff) + 1e-8)  # 归一化四元数，防止出现除0的情况
-        ori_error = 2 * jp.arccos(jp.clip(quat_diff[3], -1.0, 1.0))  # 姿态误差
-        reward_orientation = (
-            self._config.reward_config.scales.orientation
-            * (1 - reward.tolerance(ori_error, bounds=(0, 0.2), margin=1 / jp.pi))
-        )
+        quat_diff = math.normalize(quat_diff)  # 归一化四元数，防止出现除0的情况
+        ori_error =  2.0 * jp.asin(jp.clip(math.norm(quat_diff[1:]), a_max=1.0))  # 姿态误差
+        reward_orientation = reward.tolerance(ori_error, (0, 0.2), margin=jp.pi, sigmoid="linear")
 
-        # 获取方块的位置误差
-        cube_pos = self.get_cube_position(data)
-        cube_pos_mse = jp.linalg.norm(cube_pos - self._init_cube_pos)
-        reward_position = (
-            self._config.reward_config.scales.position
-            * (1 - reward.tolerance(cube_pos_mse, bounds=(0, 0.02), margin=10))
-        )
+        # # 获取方块的位置误差
+        # cube_pos = self.get_cube_position(data)
+        # cube_pos_mse = jp.linalg.norm(cube_pos - self._init_cube_pos)
+        # reward_position = (
+        #     self._config.reward_config.scales.position
+        #     * (1 - reward.tolerance(cube_pos_mse, bounds=(0, 0.02), margin=10))
+        # )
 
-        # 检查是否失败（方块掉落）
-        fail_terminate = cube_pos[2] < -0.05
-        reward_termination = (
-            self._config.reward_config.scales.termination
-            * fail_terminate
-            * (self._config.episode_length - info["step"])
-        )
+        # # 检查是否失败（方块掉落）
+        # fail_terminate = cube_pos[2] < -0.05
+        # reward_termination = (
+        #     self._config.reward_config.scales.termination
+        #     * fail_terminate
+        #     * (self._config.episode_length - info["step"])
+        # )
 
-        # 手指位置尽量少偏离初始状态
-        reward_hand_pose = (
-            self._config.reward_config.scales.hand_pose
-            * jp.sum(jp.square(data.qpos[self._hand_qids] - self._default_pose))
-        )
+        # # 手指位置尽量少偏离初始状态
+        # reward_hand_pose = (
+        #     self._config.reward_config.scales.hand_pose
+        #     * jp.sum(jp.square(data.qpos[self._hand_qids] - self._default_pose))
+        # )
 
-        # 手指动作前后变化尽量小
-        reward_action_rate = (
-            self._config.reward_config.scales.action_rate
-            * jp.sum(jp.square(action - info["last_act"]))
-        )
+        # # 手指动作前后变化尽量小
+        # reward_action_rate = (
+        #     self._config.reward_config.scales.action_rate
+        #     * jp.sum(jp.square(action - info["last_act"]))
+        # )
 
-        # 手指运动速度尽量小
-        reward_energy = (
-            self._config.reward_config.scales.energy * jp.sum(jp.square(action))
-        )
+        # # 手指运动速度尽量小
+        # reward_energy = (
+        #     self._config.reward_config.scales.energy * jp.sum(jp.square(action))
+        # )
 
-        # 成功奖励（姿态误差小于阈值）
-        is_success = ori_error < self._config.success_threshold
-        is_success = self._config.reward_config.success_reward * is_success
+        # # 成功奖励（姿态误差小于阈值）
+        # is_success = ori_error < self._config.success_threshold
+        # is_success = self._config.reward_config.success_reward * is_success
 
         # 奖励信息
         rewards = {
             "orientation": reward_orientation,
-            "position": reward_position,
-            "hand_pose": reward_hand_pose,
-            "action_rate": reward_action_rate,
-            "energy": reward_energy,
-            "fail_terminate": fail_terminate,
-            "is_success": is_success,
+            # "position": reward_position,
+            # "hand_pose": reward_hand_pose,
+            # "action_rate": reward_action_rate,
+            # "energy": reward_energy,
+            # "fail_terminate": fail_terminate,
+            # "is_success": is_success,
         }
         return rewards
 

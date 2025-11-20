@@ -36,12 +36,12 @@ camera.elevation = -20          # 从略微向下的角度观察
 state = jit_reset(jax.random.PRNGKey(0))
 # 初始化控制信号
 ctrl = jp.zeros(18)
-# ctrl = ctrl.at[0].set(-18)
+ctrl = ctrl.at[0].set(-18)
 
 # 分批仿真和渲染
 frames = []
 rollout = [state]
-total_steps = 20  # 总仿真步数
+total_steps = 100  # 总仿真步数
 
 # ctrl = ctrl.at[5].set(-15) 
 for i in range(total_steps):

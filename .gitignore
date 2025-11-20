@@ -9,8 +9,3 @@
 
 /logs/*
 !/logs/
-
-/para_env/xmls/obj_hand_no_tac.xml
-# /para_env/xmls/obj_hand_tac.xml
-/para_env/xmls/mesh_hand_tac.xml
-/para_env/xmls/mesh_hand_no_tac.xml

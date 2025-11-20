@@ -69,15 +69,8 @@
     <!-- <include file="/home/rvsa/mj_playground_hand_env/para_env/xmls/cube/reo"> -->
     <worldbody>
         <!-- 一些辅助元素 -->
-        <!-- <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="1" friction="1 0.05 0.05" solref="0.001 1" solimp="0.98 0.99 0.001"/> -->
+        <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="1" friction="1 0.05 0.05" solref="0.001 1" solimp="0.98 0.99 0.001"/>
         <!-- <site name="target" size="0.01" rgba="0 0 .9 1" pos="0 0 .2"/> -->
-        <!-- cube 的定义 -->
-        <body name="cube" pos="0.0 0.0 0.23" quat="1 0 0 0" childclass="cube">
-            <freejoint name="cube_freejoint"/>
-            <geom type="mesh" mesh="cube_mesh" material="dexcube" contype="0" conaffinity="0" density="0" group="2"/>
-            <geom name="cube" type="box" size=".035 .035 .035" mass=".108" group="3"/>
-            <site name="cube_center" pos="0 0 0" group="4"/>
-        </body>
         <!-- 手的定义 -->
         <body name="palm" pos="0 0 0.15" euler="3.14 3.14 0">
             <joint name="palm_slide_x" type="slide" axis="1 0 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
@@ -709,6 +702,17 @@
                     </body>
                 </body>
             </body>
+        </body>
+        <!-- cube 的定义 -->
+        <body name="cube" pos="0.0 0.0 0.23" quat="1 0 0 0" childclass="cube">
+            <freejoint name="cube_freejoint"/>
+            <geom type="mesh" mesh="cube_mesh" material="dexcube" contype="0" conaffinity="0" density="0" group="2"/>
+            <geom name="cube" type="box" size=".035 .035 .035" mass=".108" group="3"/>
+            <site name="cube_center" pos="0 0 0" group="4"/>
+            <!-- add a xyz frame 设置成了64防止碰撞发生-->
+            <geom name="cube_X" type="cylinder" size="0.001" fromto="0 0 0 0.05 0 0" rgba="1 0 0 1" contype="0" conaffinity="64"/>
+            <geom name="cube_Y" type="cylinder" size="0.001" fromto="0 0 0 0 0.05 0" rgba="0 1 0 1" contype="0" conaffinity="64"/>
+            <geom name="cube_Z" type="cylinder" size="0.001" fromto="0 0 0 0 0 0.05" rgba="0 0 1 1" contype="0" conaffinity="64"/>
         </body>
     </worldbody>
     <tendon>

@@ -29,7 +29,7 @@ from brax.training.agents.sac import train as sac
 from etils import epath
 from flax import struct
 from flax.training import orbax_utils
-from IPython.display import HTML, clear_output
+from IPython.display import HTML, clear_output, display
 import jax
 from jax import numpy as jp
 from matplotlib import pyplot as plt
@@ -92,7 +92,7 @@ def progress(num_steps, metrics):
   plt.title(f"y={y_data[-1]:.3f}")
   plt.errorbar(x_data, y_data, yerr=y_dataerr, color="blue")
 
-#   display(plt.gcf())
+  display(plt.gcf())
 
 ppo_training_params = dict(ppo_params)
 network_factory = ppo_networks.make_ppo_networks

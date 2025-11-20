@@ -374,14 +374,14 @@ def main(argv):
       writer.flush()
       print(f"Logged metrics to TensorBoard at step {num_steps}.")
 
-    if _RUN_EVALS.value:
-      print(f"{num_steps}: reward={metrics['eval/episode_reward']:.3f}")
-    if _LOG_TRAINING_METRICS.value:
-      if "episode/sum_reward" in metrics:
-        print(
-            f"{num_steps}: mean episode"
-            f" reward={metrics['episode/sum_reward']:.3f}"
-        )
+    # if _RUN_EVALS.value:
+    #   print(f"{num_steps}: reward={metrics['eval/episode_reward']:.3f}")
+    # if _LOG_TRAINING_METRICS.value:
+    #   if "episode/sum_reward" in metrics:
+    #     print(
+    #         f"{num_steps}: mean episode"
+    #         f" reward={metrics['episode/sum_reward']:.3f}"
+    #     )
 
   # Load evaluation environment.
   eval_env = None

@@ -5,7 +5,7 @@ PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感
 
 # 任务对应的 XML 文件路径
 TASK_XML_FILES = {
-    "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand_new.xml",
+    "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand.xml",
 }
 
 # TODO: 确认自由度数量
@@ -49,7 +49,7 @@ OUTER_SITE_NAMES = [
     for i in range(1,5)
 ]
 
-# change these joint names to fit xml file
+# change these joint names to fit xml file， only load hand related joints
 JOINT_NAMES = [
     # thumb
     "thumb_joint_1",
@@ -82,9 +82,6 @@ JOINT_NAMES = [
     "palm_slide_x",
     "palm_slide_y",
     "palm_slide_z",
-    
-    # others
-    "cube_freejoint",
 ]
     
 # change these actuator names to fit xml file
