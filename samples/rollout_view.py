@@ -1,6 +1,3 @@
-# ssh连接有GUI的Linux服务器上运行此脚本以生成视频
-# xvfb-run -s "-screen 0 640x480x24" python /home/rvsa/mj_playground_hand_env/rollout_view.py
-
 import os, sys, time
 import gc
 
@@ -46,11 +43,7 @@ rollout = [state]
 index_quats = []
 index_pos = []
 index_tendon_lengths = []
-<<<<<<< HEAD:sample/rollout_view.py
 total_steps = 400  # 总仿真步数
-=======
-total_steps = 1500  # 总仿真步数
->>>>>>> 334cf9442ce1a4c95904b16ff3aa7a7ed6743d4e:rollout_view.py
 
 ctrl = ctrl.at[5].set(-15) 
 for i in range(total_steps):
@@ -67,7 +60,6 @@ for i in range(total_steps):
      if (i % 200) == 0:
           gc.collect()
 
-<<<<<<< HEAD:sample/rollout_view.py
 # ctrl = ctrl.at[5].set(0) # 放松index tendon
 # for _ in range(total_steps):
 #      state = jit_step(state, ctrl)
@@ -75,7 +67,6 @@ for i in range(total_steps):
 #      index_quats.append(env.get_finger_quat(state.data, "index"))
 #      index_tendon_lengths.append(env.get_tendon_length(state.data, "index_tendon"))
 #      rollout.append(state)
-=======
 ctrl = ctrl.at[5].set(0) # 放松index tendon
 for _ in range(total_steps):
      state = jit_step(state, ctrl)
@@ -89,7 +80,6 @@ for _ in range(total_steps):
 
      if (i % 200) == 0:
           gc.collect()
->>>>>>> 334cf9442ce1a4c95904b16ff3aa7a7ed6743d4e:rollout_view.py
 
 # 保存四元数数据到本地文件
 # jp.save("./middle_finger_quats.npy", jp.stack(middle_quats))

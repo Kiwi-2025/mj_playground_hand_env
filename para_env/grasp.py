@@ -18,58 +18,32 @@ from para_env import para_hand_base
 from para_env.para_hand_base import ParaHandEnv
 
 def default_config() -> config_dict.ConfigDict:
-  """config for ParaHandReorient environment. Check existing config for details."""
   return config_dict.create(
       ctrl_dt=0.02,
       sim_dt=0.002,
-
-      action_scale=0.5,
+      action_scale=1.0,
       action_repeat=1,
-      ema_alpha=1.0,
-      episode_length=128,
-      success_threshold=0.1,
+      episode_length=1000,
       history_len=1,
-      # 观测噪声配置
-      obs_noise=config_dict.create(
-          level=1.0,
-          scales=config_dict.create(
-              joint_pos=0.05,
-              cube_pos=0.02,
-              cube_ori=0.1,
-          ),
-          random_ori_injection_prob=0.0,
-      ),
-      # 奖励函数配置
       reward_config=config_dict.create(
           scales=config_dict.create(
-              orientation=5.0,
-            #   position=0.5,
-            #   termination=-100.0,
-            #   hand_pose=-0.5,
-            #   action_rate=-0.001,
-            #   joint_vel=0.0,
-            #   energy=-1e-3,
-            #   is_success=10.0,
-            #   fail_terminate=0.0,
+              reach_finger=-0.1,
+              inner_dist=-0.02,
+              outer_dist=-20,
+              reach_palm=0,
+              lift=0.1,
+              move_obj=-10,
+              action_rate=0,
+              energy=0,
+              contact_num=0.05,
+              finger_bend=0.01,
           ),
-          success_reward=100.0,
+          success_reward=1000.0,
       ),
-      # 扰动配置
-      pert_config=config_dict.create(
-          enable=False,
-          linear_velocity_pert=[0.0, 3.0],
-          angular_velocity_pert=[0.0, 0.5],
-          pert_duration_steps=[1, 100],
-          pert_wait_steps=[60, 150],
-      ),
-
-      impl='jax',
-      nconmax=4096,
-      njmax=256,
   )
 
-class ParaHandReorient(ParaHandEnv):
-    """ParaHand重定位任务环境"""
+class ParaHandGrasp(ParaHandEnv):
+    """ParaHand抓取任务环境"""
 
     def __init__(
         self,
@@ -88,9 +62,10 @@ class ParaHandReorient(ParaHandEnv):
         # get ids for relevant joints and geoms
         self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.JOINT_NAMES)
         self._hand_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.JOINT_NAMES)
-        self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
+        self._obj_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
+        # self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
         # self._floor_geom_id = self._mj_model.geom("floor").id
-        self._cube_geom_id = self._mj_model.geom("cube").id
+        # self._cube_geom_id = self._mj_model.geom("cube").id
         # debug info
         # print("hand qpos ids num:", self._hand_qids.shape)
         # print("hand qvel ids num:", self._hand_dqids.shape) 
@@ -100,9 +75,9 @@ class ParaHandReorient(ParaHandEnv):
         self._tips_bids = [self._mj_model.body(tip).id for tip in [
             "thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"
         ]]
-        # 不清楚inner和outer sites的作用，暂时注释掉. If needed, can uncomment and add in xml files
-        # self._inner_sids = [self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES]
-        # self._outer_sids = [self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES]
+        # inner and outer site ids, 用于引导抓取
+        self._inner_sids = [self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES]
+        self._outer_sids = [self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES]
         
         # get ids for tactile geoms
         self._tactile_geom_ids = [self._mj_model.geom(name).id for name in consts.TACTILE_GEOM_NAMES]
@@ -115,8 +90,6 @@ class ParaHandReorient(ParaHandEnv):
 
         self._default_pose = self._init_q[self._hand_qids]
         self._default_hand_vel = self._init_q_vel[self._hand_qids]
-        self._init_cube_pos = self._init_q[self._cube_qids][:3]
-        self._init_cube_vel = self._init_q_vel[self._cube_qids][:3]
         self._lowers, self._uppers = self.mj_model.actuator_ctrlrange.T
         
         # DEBUG: print initial positions
@@ -130,17 +103,16 @@ class ParaHandReorient(ParaHandEnv):
         rng, pos_rng, vel_rng = jax.random.split(rng, 3)
         
         q_hand = self._default_pose
-        # q_hand = jp.zeros(consts.NQ_POS)
         # q_hand = jp.clip(
         #     self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ_POS,)),
         #     self._lowers,
         #     self._uppers,
         # )
-        # jax.debug.print("q_hand shape:{}", q_hand.shape)
         
-        # v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
-        # v_hand = jp.zeros(consts.NV)
         v_hand = self._default_hand_vel
+
+        # DEBUG: print randomized hand states shape
+        # jax.debug.print("q_hand shape:{}", q_hand.shape)
         # jax.debug.print("v_hand shape:{}", v_hand.shape)
         
         # Randomizes cube qpos and qvel
@@ -186,7 +158,6 @@ class ParaHandReorient(ParaHandEnv):
             "ctrl_full": jp.zeros(self.mjx_model.nu),
             "last_act": jp.zeros(consts.NU),
             "last_last_act": jp.zeros(consts.NU),
-            "last_cube_angvel": jp.zeros(3),
         }
 
         metrics = {}
@@ -213,18 +184,18 @@ class ParaHandReorient(ParaHandEnv):
 
         # get rewards
         rewards = self._get_reward(data, action, state.info, state.metrics, done)
-        reward = {
+        rewards = {
             k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
         } # scale rewards with config scales constatnts
         
         # update metrics
-        for k, v in reward.items():
+        for k, v in rewards.items():
             state.metrics[f"reward/{k}"] = v
         # state.metrics["steps_since_last_success"] = state.info["steps_since_last_success"]
         # state.metrics["success_count"] = state.info["success_count"]
 
         # update total reward metrics
-        reward = sum(reward.values()) * self.dt  # total reward
+        reward = sum(rewards.values()) * self.dt  # total reward
         state.metrics["reward/total"] = reward
 
         done = done.astype(reward.dtype)
@@ -300,67 +271,100 @@ class ParaHandReorient(ParaHandEnv):
         metrics: dict[str, Any],
         done: jax.Array,
     ) -> dict[str, jax.Array]:
-        """计算奖励函数，结合参考设计进行改进。"""
-        del metrics  # Unused.
+        """
+        计算抓取任务的奖励函数,奖励包括以下内容:
+        - 物体位姿奖励,物体的位姿与目标点之间的距离,鼓励灵巧手靠近物体并抓取物体
+        - 内部标记点距离奖励:内侧的标记点的 SDF 值之和,鼓励灵巧手的手指和手掌内侧靠近物体
+        - 外部标记点距离:外侧的标记点的 SDF 值之和与内侧的差值,使物体保持在手指和手掌的内侧
+        - 手指弯曲度:在手掌与物体距离小于阈值时,对手指的弯曲动作进行奖励,以抓取物体
+        - 接触状态:每根手指尖端视触觉传感器检测到接触数据时施加奖励,由于抓取时大拇指与其他手指处于对侧,因此大拇指对抓握的作用更大,给予更大的奖励
+        - 抬升高度:当大拇指以及其他至少一根手指上的视触觉传感器检测到接触数据时(此时大概率接近或已经抓住物体),对灵巧手手掌的抬升动作进行奖励,鼓励灵巧手抬升物体
+        """
+        del done, metrics  # Unused.
+        target_pos= self.get_target_position(data)
+        obj_pos=self.get_obj_position(data)
+        palm_pos = self.get_palm_position(data)
+        obj_dist=jp.linalg.norm(target_pos - obj_pos[:3])
 
-        # 获取方块和目标的姿态
-        cube_ori = self.get_cube_orientation(data)
-        # TODO: replace with a easily change goal orientation function
-        # goal_ori = self.orientation_target  # 目标姿态
-        goal_ori = jp.array([0.0, 0.0, 0.0, 1.0])   # 绕 z 轴旋转 180 度
-        quat_diff = math.quat_mul(cube_ori, math.quat_inv(goal_ori))
-        quat_diff = math.normalize(quat_diff)  # 归一化四元数，防止出现除0的情况
-        ori_error =  2.0 * jp.asin(jp.clip(math.norm(quat_diff[1:]), a_max=1.0))  # 姿态误差
-        reward_orientation = reward.tolerance(ori_error, (0, 0.2), margin=jp.pi, sigmoid="linear")
+        tips_pos = self.get_tips_positions(data)
+        tips_dist = self.get_cube_sdf(obj_pos, tips_pos)
+        weight=jp.array([10.0,0.0,0.0,0.0,0.0])
+        reward_tips_dist = jp.sum(tips_dist* weight)
+        
+        inner_dist=self.get_cube_sdf(obj_pos, self.get_inner_sites_positions(data))
+        outer_dist=self.get_cube_sdf(obj_pos, self.get_outer_sites_positions(data))
 
-        # # 获取方块的位置误差
-        # cube_pos = self.get_cube_position(data)
-        # cube_pos_mse = jp.linalg.norm(cube_pos - self._init_cube_pos)
-        # reward_position = (
-        #     self._config.reward_config.scales.position
-        #     * (1 - reward.tolerance(cube_pos_mse, bounds=(0, 0.02), margin=10))
-        # )
+        reward_inner_dist = jp.sum(jp.maximum(inner_dist[:15], -0.0001))*10 + jp.sum(jp.maximum(inner_dist[15:-4], -0.0001)) + jp.sum(jp.maximum(inner_dist[-4:], 0.01))*20
+        
+        reward_outer_dist = jp.sum(jp.maximum(0, inner_dist - outer_dist))
 
-        # # 检查是否失败（方块掉落）
-        # fail_terminate = cube_pos[2] < -0.05
-        # reward_termination = (
-        #     self._config.reward_config.scales.termination
-        #     * fail_terminate
-        #     * (self._config.episode_length - info["step"])
-        # )
+        palm_dist=jp.linalg.norm(palm_pos - obj_pos[:3])
+        
+        z_lift=-action[11]
 
-        # # 手指位置尽量少偏离初始状态
-        # reward_hand_pose = (
-        #     self._config.reward_config.scales.hand_pose
-        #     * jp.sum(jp.square(data.qpos[self._hand_qids] - self._default_pose))
-        # )
+        reward_reach_palm = palm_dist
 
-        # # 手指动作前后变化尽量小
-        # reward_action_rate = (
-        #     self._config.reward_config.scales.action_rate
-        #     * jp.sum(jp.square(action - info["last_act"]))
-        # )
+        reward_move = obj_dist
 
-        # # 手指运动速度尽量小
-        # reward_energy = (
-        #     self._config.reward_config.scales.energy * jp.sum(jp.square(action))
-        # )
+        terminated = self._get_termination(data, info)
 
-        # # 成功奖励（姿态误差小于阈值）
-        # is_success = ori_error < self._config.success_threshold
-        # is_success = self._config.reward_config.success_reward * is_success
+        #contact_num的要重写一下
+        tactile_info = self.get_tactile_info(data)
+        
+        finger_contacts = jp.array([
+            jp.any(jp.abs(tactile_info[finger][:, 4]) > 0.0001)
+            for finger in ['index', 'middle', 'ring', 'little', 'thumb']
+        ])
+        weights = jp.array([1.0, 1.0, 1.0, 1.0, 5.0])  # 拇指权重为5
+        contact_num = jp.sum(finger_contacts * weights)
 
-        # 奖励信息
-        rewards = {
-            "orientation": reward_orientation,
-            # "position": reward_position,
-            # "hand_pose": reward_hand_pose,
-            # "action_rate": reward_action_rate,
-            # "energy": reward_energy,
-            # "fail_terminate": fail_terminate,
-            # "is_success": is_success,
+        reward_contact = contact_num
+        #reward_flag = np.int_(palm_dist<0.1)+np.int_(obj_dist>0.05)
+        reward_finger_bend=0
+        reward_lift=0
+
+        # Use jp.where instead of if statements
+        # First, calculate finger_bend for all cases
+        reward_finger_bend = jp.where(
+        palm_dist < 0.1,
+        jp.sum(action[1:5]),
+        0.0
+        )
+        
+        # Calculate lift reward based on conditions
+        lift_from_position = jp.where(
+        palm_pos[2] > 0.2,
+        2,
+        2 * jp.maximum(0, z_lift)
+        )
+        
+        # Apply lift reward only when palm is close and there's enough contact
+        reward_lift = jp.where(
+        (palm_dist < 0.1) & (contact_num > 5),
+        lift_from_position,
+        0.0
+        )
+
+
+        return {
+            "reach_finger": reward_tips_dist,
+            "inner_dist": reward_inner_dist,
+            "outer_dist": reward_outer_dist,
+            "reach_palm": reward_reach_palm,
+            "lift": reward_lift,
+            "move_obj": reward_move,
+            "action_rate": self._cost_action_rate(
+                action,
+                info["last_act"],
+                info["last_last_act"],
+            ),
+            "energy": self._cost_energy(
+                data.qvel,
+                data.qfrc_actuator,
+            ),
+            "contact_num": reward_contact,
+            "finger_bend": reward_finger_bend,
         }
-        return rewards
 
     # Additional sensors specially for this task env
     # TODO: check the sensor names and add these sensors to the xml if not exists
@@ -378,26 +382,70 @@ class ParaHandReorient(ParaHandEnv):
             for sensor_name in sensor_names
         ])
 
-    def get_cube_position(self, data:mjx.Data) -> jax.Array:
-        """获取方块的位置表示""" 
-        return mjx_env.get_sensor_data(self.mj_model, data, "cube_freejoint_frame_origin_pos")
+    # Neccessary getters 
+    def get_obj_position(self, data:mjx.Data) -> jax.Array:
+        """获取物体位置"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_pos")
 
-    def get_cube_orientation(self, data:mjx.Data) -> jax.Array:
-        """获取方块的四元数表示"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "cube_freejoint_frame_origin_quat")
-
-    def get_cube_angvel(self, data:mjx.Data) -> jax.Array:
-        """获取方块的角速度表示"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "cube_freejoint_angvel")
-
-    def get_cube_linvel(self, data:mjx.Data) -> jax.Array:
-        """获取方块的线速度表示"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "cube_freejoint_linvel")
+    def get_target_position(self, data:mjx.Data) -> jax.Array:
+        """获取目标位置""" 
+        return mjx_env.get_sensor_data(self.mj_model, data, "target_pos")
     
-    def get_palm_position(self, data:mjx.Data) -> jax.Array:
-        """获取手掌的位置表示"""
+    def get_palm_position(self, data: mjx.Data) -> jax.Array:
+        """获取手掌位置"""
         return mjx_env.get_sensor_data(self.mj_model, data, "palm_pos")
     
+    def get_palm_quat(self, data: mjx.Data) -> jax.Array:
+        """获取手掌四元数表示的位姿"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "palm_quat")
+    
+    def get_tips_positions(self, data: mjx.Data) -> jax.Array:
+        """获取指尖位置"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "tips_pos")
+    
+    def get_inner_sites_positions(self, data: mjx.Data) -> jax.Array:
+        """获取inner sites的位置"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "inner_sites_pos")
+    
+    def get_outer_sites_positions(self, data: mjx.Data) -> jax.Array:
+        """获取outer sites的位置"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "outer_sites_pos")  
+    
+    def get_ten_len(self, data: mjx.Data) -> jax.Array:
+        """获取tendon长度"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "tendon_length")
+    
+    def get_cube_sdf(self, cube_pose: jax.Array, points: jax.Array) -> jax.Array:
+        """
+        Calculate signed distance field (SDF) from points to a cube.
+        Args:
+            cube_pose: Array of shape (7,) with position and quaternion [x,y,z,qx,qy,qz,qw]
+            points: Array of shape (N,3) containing N point coordinates
+        Returns:
+            Array of shape (N,) with signed distances to cube surface
+        """
+        # Cube dimensions (half-lengths)
+        cube_half_size = jp.array([0.04, 0.04, 0.04])
+
+        # Extract translation and rotation
+        pos = cube_pose[:3]
+        quat = cube_pose[3:]
+        
+        # Convert quaternion to rotation matrix using MuJoCo math
+        rot_matrix = math.quat_to_mat(quat)
+
+        # Transform points to local space
+        local_points = jp.einsum('ij,nj->ni', rot_matrix.T, points - pos)
+
+        # Calculate distances per axis
+        d = jp.abs(local_points) - cube_half_size
+
+        # Calculate final distance
+        outside_distance = jp.linalg.norm(jp.maximum(d, 0.0), axis=1)
+        inside_distance = jp.minimum(jp.max(d, axis=1), 0.0)
+
+        return outside_distance + inside_distance 
+
     # Tactile sensor processing
     def _find_contact_indices(self, data: mjx.Data) -> tuple[jax.Array, jax.Array]:
         """Find contact indices for each tactile geom.

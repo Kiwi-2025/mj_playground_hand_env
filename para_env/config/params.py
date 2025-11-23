@@ -21,25 +21,44 @@ def brax_ppo_config(
             policy_hidden_layer_sizes=(128, 64),
             value_hidden_layer_sizes=(128, 64),
             policy_obs_key="state",
-            value_obs_key="state",
+            value_obs_key="privileged_state",
             # activation=linen.relu
         ),
     )
     
     # 根据环境名称添加特定参数
+    # BRAX要求 batch_size == num_envs * unroll_length，在设计这些参数时候最好确保所有的参数之间都是可以整除的
+    # 重新定位任务，将方块重新旋转定位到目标位置
     if env_name == "ParaHandReorient":
         rl_config.update(
             num_resets_per_eval=1,
-            num_timesteps=100_000_000,
-            num_evals=20,
-            num_envs=8,#先放少一些
-            batch_size=8,#先放少一些
-            num_minibatches=32,
-            num_updates_per_batch=5,
+            num_timesteps=20_000,
+            num_evals=10,
+            num_envs=8,
+            unroll_length=32,
+            batch_size=256,
+            num_minibatches=4,
+            num_updates_per_batch=2,
             learning_rate=3e-4,
             entropy_cost=1e-2,
-            discounting=0.97,
-            unroll_length=5,
+            discounting=0.99,
+            max_devices_per_host=8,
+        )
+
+    # 抓取任务 
+    elif env_name == "ParaHandGrasp":
+        rl_config.update(
+            num_resets_per_eval=1,
+            num_timesteps=100_000_000,
+            num_evals=10,
+            num_envs=16,
+            batch_size=64,
+            num_minibatches=16,
+            num_updates_per_batch=4,
+            learning_rate=2e-4,
+            entropy_cost=5e-3,
+            discounting=0.95,
+            unroll_length=10,
             max_devices_per_host=8,
         )
     # 可以根据需要添加更多环境的配置

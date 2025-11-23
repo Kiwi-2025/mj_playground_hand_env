@@ -7,6 +7,9 @@ import os
 import time
 import warnings
 
+if "DISPLAY" not in os.environ:
+    os.environ.setdefault("MUJOCO_GL", "egl")
+
 from absl import app
 from absl import flags
 from absl import logging
@@ -36,7 +39,7 @@ xla_flags = os.environ.get("XLA_FLAGS", "")
 xla_flags += " --xla_gpu_triton_gemm_any=True"
 os.environ["XLA_FLAGS"] = xla_flags
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-os.environ["MUJOCO_GL"] = "egl"
+# os.environ["MUJOCO_GL"] = "egl"
 
 # Ignore the info logs from brax
 logging.set_verbosity(logging.WARNING)
@@ -489,14 +492,26 @@ def main(argv):
   render_every = 2
   fps = 1.0 / eval_env.dt / render_every
   print(f"FPS for rendering: {fps}")
+  # scene options
   scene_option = mujoco.MjvOption()
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = False
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
+  # camera options
+  # camera = mujoco.MjvCamera()
+  # camera.type = mujoco.mjtCamera.mjCAMERA_FREE
+  # camera.lookat[:] = [0, 0, 0.2]  # 对准手部模型的中心位置
+  # camera.distance = 0.3           # 缩短摄像机距离
+  # camera.azimuth = 270             # 从侧面观察
+  # camera.elevation = -20          # 从略微向下的角度观察
+
+
   for i, rollout in enumerate(trajectories):
     traj = rollout[::render_every]
     frames = eval_env.render(
-        traj, height=480, width=640, scene_option=scene_option
+        traj, height=480, width=640, 
+        # camera=camera,
+        scene_option=scene_option
     )
     media.write_video(f"rollout{i}.mp4", frames, fps=fps)
     print(f"Rollout video saved as 'rollout{i}.mp4'.")
