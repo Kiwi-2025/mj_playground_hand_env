@@ -26,7 +26,7 @@ def default_config() -> config_dict.ConfigDict:
       action_scale=0.5,
       action_repeat=1,
       ema_alpha=1.0,
-      episode_length=128,
+      episode_length=256,
       success_threshold=0.1,
       history_len=1,
       # 观测噪声配置
@@ -262,6 +262,10 @@ class ParaHandReorient(ParaHandEnv):
             joint_qpos,
             # noisy_joint_qpos,
             info["last_act"],
+            cube_pos,
+            cube_quat,
+            cube_angvel,
+            cube_linvel,
             # *self.get_tactile_info(data),
         ])
         

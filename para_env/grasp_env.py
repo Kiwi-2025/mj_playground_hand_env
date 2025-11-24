@@ -40,6 +40,9 @@ def default_config() -> config_dict.ConfigDict:
           ),
           success_reward=1000.0,
       ),
+      impl='jax',
+      nconmax=128,  # 可能的接触对数量
+      njmax=512,    # 可能的约束数量
   )
 
 class ParaHandGrasp(ParaHandEnv):
@@ -51,7 +54,7 @@ class ParaHandGrasp(ParaHandEnv):
         config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
     ):  
         super().__init__(
-            xml_path=consts.TASK_XML_FILES["reorient"].as_posix(),
+            xml_path=consts.TASK_XML_FILES["grasp"].as_posix(),
             # change const xml to para change xml later
             config=config,
             config_overrides=config_overrides,
@@ -62,7 +65,8 @@ class ParaHandGrasp(ParaHandEnv):
         # get ids for relevant joints and geoms
         self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.JOINT_NAMES)
         self._hand_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.JOINT_NAMES)
-        self._obj_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
+        # self._obj_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
+        self.target_id = self._mj_model.site("target").id
         # self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
         # self._floor_geom_id = self._mj_model.geom("floor").id
         # self._cube_geom_id = self._mj_model.geom("cube").id
@@ -76,8 +80,8 @@ class ParaHandGrasp(ParaHandEnv):
             "thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"
         ]]
         # inner and outer site ids, 用于引导抓取
-        self._inner_sids = [self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES]
-        self._outer_sids = [self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES]
+        self._inner_sids = jp.array([self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES])
+        self._outer_sids = jp.array([self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES])
         
         # get ids for tactile geoms
         self._tactile_geom_ids = [self._mj_model.geom(name).id for name in consts.TACTILE_GEOM_NAMES]
@@ -123,7 +127,7 @@ class ParaHandGrasp(ParaHandEnv):
         # start_quat = para_hand_base.uniform_quat(quat_rng)
         
         # 固定初始位置和姿态进行测试
-        start_pos = jp.array([0.0, 0.0, 0.21])  # 手掌的上表面大概是 z=0.2
+        start_pos = jp.array([0.0, 0.0, 0.02]) # 设置为方块半棱长的高度就能放在地面上
         start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
         q_cube = jp.array([*start_pos, *start_quat])
         v_cube = jp.zeros(6)
@@ -210,7 +214,7 @@ class ParaHandGrasp(ParaHandEnv):
         # check invalid velocities or poses
         # nans = jp.any(jp.isnan(data.qpos)) | jp.any(jp.isnan(data.qvel))
         # check cube falling below floor
-        fall_termination = self.get_cube_position(data)[2] < -0.05
+        fall_termination = self.get_obj_position(data)[2] < -0.2
         return fall_termination
 
     def _get_obs(
@@ -237,12 +241,12 @@ class ParaHandGrasp(ParaHandEnv):
         ])
         
         # all these functions should be defined in the base class, and necessary sensors should be added to the xml
-        cube_pos = self.get_cube_position(data)
+        cube_pos = self.get_obj_position(data)
         palm_pos = self.get_palm_position(data)
         cube_pos_error = palm_pos - cube_pos
-        cube_quat = self.get_cube_orientation(data)
-        cube_angvel = self.get_cube_angvel(data)
-        cube_linvel = self.get_cube_linvel(data)
+        cube_quat = self.get_obj_orientation(data)
+        # cube_angvel = self.get_obj_angvel(data)
+        cube_linvel = self.get_obj_linvel(data)
         fingertip_positions = self.get_fingertip_positions(data)
     
         # 供价值网络用于估算价值所需要的完整状态
@@ -253,7 +257,7 @@ class ParaHandGrasp(ParaHandEnv):
             fingertip_positions,
             cube_pos_error,
             cube_quat,
-            cube_angvel,
+            # cube_angvel,
             cube_linvel,
         ])
     
@@ -283,16 +287,18 @@ class ParaHandGrasp(ParaHandEnv):
         del done, metrics  # Unused.
         target_pos= self.get_target_position(data)
         obj_pos=self.get_obj_position(data)
+        obj_quat=self.get_obj_orientation(data)
+        obj_pose = jp.concatenate([obj_pos, obj_quat])
         palm_pos = self.get_palm_position(data)
         obj_dist=jp.linalg.norm(target_pos - obj_pos[:3])
 
         tips_pos = self.get_tips_positions(data)
-        tips_dist = self.get_cube_sdf(obj_pos, tips_pos)
+        tips_dist = self.get_cube_sdf(obj_pose, tips_pos)
         weight=jp.array([10.0,0.0,0.0,0.0,0.0])
         reward_tips_dist = jp.sum(tips_dist* weight)
         
-        inner_dist=self.get_cube_sdf(obj_pos, self.get_inner_sites_positions(data))
-        outer_dist=self.get_cube_sdf(obj_pos, self.get_outer_sites_positions(data))
+        inner_dist=self.get_cube_sdf(obj_pose, self.get_inner_sites_positions(data))
+        outer_dist=self.get_cube_sdf(obj_pose, self.get_outer_sites_positions(data))
 
         reward_inner_dist = jp.sum(jp.maximum(inner_dist[:15], -0.0001))*10 + jp.sum(jp.maximum(inner_dist[15:-4], -0.0001)) + jp.sum(jp.maximum(inner_dist[-4:], 0.01))*20
         
@@ -306,7 +312,7 @@ class ParaHandGrasp(ParaHandEnv):
 
         reward_move = obj_dist
 
-        terminated = self._get_termination(data, info)
+        terminated = self._get_termination(data)
 
         #contact_num的要重写一下
         tactile_info = self.get_tactile_info(data)
@@ -353,15 +359,15 @@ class ParaHandGrasp(ParaHandEnv):
             "reach_palm": reward_reach_palm,
             "lift": reward_lift,
             "move_obj": reward_move,
-            "action_rate": self._cost_action_rate(
-                action,
-                info["last_act"],
-                info["last_last_act"],
-            ),
-            "energy": self._cost_energy(
-                data.qvel,
-                data.qfrc_actuator,
-            ),
+            # "action_rate": self._cost_action_rate(
+            #     action,
+            #     info["last_act"],
+            #     info["last_last_act"],
+            # ),
+            # "energy": self._cost_energy(
+            #     data.qvel,
+            #     data.qfrc_actuator,
+            # ),
             "contact_num": reward_contact,
             "finger_bend": reward_finger_bend,
         }
@@ -384,12 +390,22 @@ class ParaHandGrasp(ParaHandEnv):
 
     # Neccessary getters 
     def get_obj_position(self, data:mjx.Data) -> jax.Array:
-        """获取物体位置"""
+        """获取待抓取的方块物体位置"""
+        # 不一定是方块所以没有用cube而是用了obj
         return mjx_env.get_sensor_data(self.mj_model, data, "cube_pos")
+
+    def get_obj_orientation(self, data:mjx.Data) -> jax.Array:
+        """获取待抓取的方块物体四元数表示的位姿"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_quat")
+    
+    def get_obj_linvel(self, data:mjx.Data) -> jax.Array:
+        """获取待抓取的方块物体线速度"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_linvel")
 
     def get_target_position(self, data:mjx.Data) -> jax.Array:
         """获取目标位置""" 
-        return mjx_env.get_sensor_data(self.mj_model, data, "target_pos")
+        target_pos = data.site_xpos[self.target_id] # 不想写传感器破坏xml了，直接用site位置
+        return jp.array(target_pos)
     
     def get_palm_position(self, data: mjx.Data) -> jax.Array:
         """获取手掌位置"""
@@ -400,17 +416,27 @@ class ParaHandGrasp(ParaHandEnv):
         return mjx_env.get_sensor_data(self.mj_model, data, "palm_quat")
     
     def get_tips_positions(self, data: mjx.Data) -> jax.Array:
-        """获取指尖位置"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "tips_pos")
+        """获取所有指尖的位置表示"""
+        sensor_names = [
+            "thumb_fingertip_pos",
+            "index_fingertip_pos",
+            "middle_fingertip_pos",
+            "ring_fingertip_pos",
+            "little_fingertip_pos",
+        ]
+        return jp.stack([
+            mjx_env.get_sensor_data(self.mj_model, data, sensor_name)
+            for sensor_name in sensor_names
+        ])
     
     def get_inner_sites_positions(self, data: mjx.Data) -> jax.Array:
         """获取inner sites的位置"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "inner_sites_pos")
+        return data.site_xpos[self._inner_sids]
     
     def get_outer_sites_positions(self, data: mjx.Data) -> jax.Array:
         """获取outer sites的位置"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "outer_sites_pos")  
-    
+        return data.site_xpos[self._outer_sids]
+      
     def get_ten_len(self, data: mjx.Data) -> jax.Array:
         """获取tendon长度"""
         return mjx_env.get_sensor_data(self.mj_model, data, "tendon_length")
@@ -622,10 +648,11 @@ class ParaHandGrasp(ParaHandEnv):
         return self._mjx_model
 
 def domain_randomize(model: mjx.Model, rng: jax.Array):
-        mj_model = ParaHandReorient().mj_model
+        mj_model = ParaHandGrasp().mj_model
         cube_geom_id = mj_model.geom("cube").id
         cube_body_id = mj_model.body("cube").id
         hand_qids = mjx_env.get_qpos_ids(mj_model, consts.JOINT_NAMES)
+        # TODO: hand_body_names 需要检查
         hand_body_names = [
             "palm",
             "if_bs",
@@ -772,7 +799,7 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
         return model, in_axes
 
 if __name__ == "__main__":
-    env = ParaHandReorient()
+    env = ParaHandGrasp()
     rng = jax.random.PRNGKey(0)
     state = env.reset(rng)
     print("环境重置成功！")

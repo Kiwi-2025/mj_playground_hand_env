@@ -149,7 +149,7 @@ _LOG_TRAINING_METRICS = flags.DEFINE_boolean(
 )
 _TRAINING_METRICS_STEPS = flags.DEFINE_integer(
     "training_metrics_steps",
-    1_000_000,
+    10_000,
     "Number of steps between logging training metrics. Increase if training"
     " experiences slowdown.",
 )
