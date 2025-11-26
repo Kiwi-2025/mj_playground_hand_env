@@ -21,7 +21,7 @@ def default_config() -> config_dict.ConfigDict:
   """config for ParaHandRotateZ environment. Check existing config for details."""
   return config_dict.create(
       ctrl_dt=0.02,
-      sim_dt=0.002,
+      sim_dt=0.001,
 
       action_scale=0.5,
       action_repeat=1,
@@ -181,8 +181,9 @@ class ParaHandRotateZ(BaseEnv):
             metrics[f"reward/{k}"] = jp.zeros(())
         metrics["reward/total"] = jp.zeros(())
 
-        obs_history = jp.zeros(self._config.history_len*43) 
+        obs_history = jp.zeros(self._config.history_len*43)     
         # TODO：43 = state size (25 joint pos + 18 last act) 注意修改这个尺寸
+        # obs_history = jp.zeros(self._config.history_len*34)
         obs = self._get_obs(data, info, obs_history)
         reward, done = jp.zeros(2)
 

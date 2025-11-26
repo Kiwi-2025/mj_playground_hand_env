@@ -41,7 +41,7 @@ camera.elevation = -20          # 从略微向下的角度观察
 state = jit_reset(jax.random.PRNGKey(0))
 # 初始化控制信号
 ctrl = jp.zeros(18)
-ctrl = ctrl.at[0].set(-18)
+# ctrl = ctrl.at[0].set(-18)
 
 # 分批仿真和渲染
 frames = []
@@ -57,7 +57,7 @@ for i in range(total_steps):
 # jp.save("./middle_finger_quats.npy", jp.stack(middle_quats))
 frames = env.render(rollout, height=480, width=640, camera=camera)
 
-output_path = f"./video/notendon.mp4"
+output_path = f"./video/mesh_only.mp4"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 media.write_video(output_path, frames, fps=30)
 print(f"视频已保存到 {output_path}")
