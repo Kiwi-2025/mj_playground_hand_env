@@ -8,21 +8,31 @@ from mujoco import mjx
 from mujoco_playground._src import mjx_env
 
 from para_env import reorient_env
+from para_env import rotateZ_env
+from para_env import grasp_env
 
 ALL_ENVS = (
     "ParaHandReorient",
+    "ParaHandRotateZ",
+    "ParaHandGrasp",
 )
 
 _envs = {
     "ParaHandReorient": reorient_env.ParaHandReorient,
+    "ParaHandRotateZ": rotateZ_env.ParaHandRotateZ,
+    "ParaHandGrasp": grasp_env.ParaHandGrasp,
 }
 
 _cfgs = {
     "ParaHandReorient": reorient_env.default_config,
+    "ParaHandRotateZ": rotateZ_env.default_config,
+    "ParaHandGrasp": grasp_env.default_config,
 }
 
 _randomizer = {
     "ParaHandReorient": reorient_env.domain_randomize,
+    "ParaHandRotateZ": rotateZ_env.domain_randomize,
+    "ParaHandGrasp": grasp_env.domain_randomize,
 }
 
 def __getattr__(name):

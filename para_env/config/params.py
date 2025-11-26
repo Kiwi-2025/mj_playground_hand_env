@@ -18,12 +18,12 @@ def brax_ppo_config(
         action_repeat=env_config.action_repeat,
         reward_scaling=1.0,
         network_factory=config_dict.create(
-            policy_hidden_layer_sizes=(128, 64),
-            value_hidden_layer_sizes=(128, 64),
+            policy_hidden_layer_sizes=(32, 32, 32, 32),
+            value_hidden_layer_sizes=(256, 256, 256, 256, 256),
             policy_obs_key="state",
-            value_obs_key="privileged_state",
-            # activation=linen.relu
+            value_obs_key="state",
         ),
+        num_resets_per_eval=10,
     )
     
     # 根据环境名称添加特定参数
@@ -44,8 +44,6 @@ def brax_ppo_config(
             discounting=0.99,
             max_devices_per_host=8,
         )
-
-    # 抓取任务 
     elif env_name == "ParaHandGrasp":
         rl_config.update(
             num_resets_per_eval=1,
@@ -61,22 +59,24 @@ def brax_ppo_config(
             unroll_length=10,
             max_devices_per_host=8,
         )
-    # 可以根据需要添加更多环境的配置
-    # elif env_name == "AnotherParaHandEnv":
-    #     rl_config.update(
-    #         num_resets_per_eval=5,
-    #         num_timesteps=5_000_000,
-    #         num_evals=5,
-    #         num_envs=1024,
-    #         batch_size=512,
-    #         num_minibatches=16,
-    #         num_updates_per_batch=2,
-    #         learning_rate=1e-4,
-    #         entropy_cost=5e-3,
-    #         discounting=0.95,
-    #         unroll_length=5,
-    #         max_devices_per_host=4,
-    #     )
+    elif env_name == "ParaHandRotateZ":
+        rl_config.num_timesteps = 100_000_000
+        rl_config.num_evals = 10
+        rl_config.num_minibatches = 32
+        rl_config.unroll_length = 40
+        rl_config.num_updates_per_batch = 4
+        rl_config.discounting = 0.97
+        rl_config.learning_rate = 3e-4
+        rl_config.entropy_cost = 1e-2
+        rl_config.num_envs = 1024
+        rl_config.batch_size = 256
+        rl_config.num_resets_per_eval = 1
+        rl_config.network_factory = config_dict.create(
+            policy_hidden_layer_sizes=(512, 256, 128),
+            value_hidden_layer_sizes=(512, 256, 128),
+            policy_obs_key="state",
+            value_obs_key="privileged_state",
+        )
     
     
     else:

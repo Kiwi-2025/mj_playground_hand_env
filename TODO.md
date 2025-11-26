@@ -6,7 +6,7 @@ batch_size=128 与 num_envs=4, unroll_length=5 不匹配。Brax 期望 batch_siz
     - 25可能为机器人手的自由度数目，需要确认
 
 
-- TensorBoard 中出现了过多的训练指标，出现了不知道原因的eval环境标签
+
 - `action_matrix` 需要查明含义，各个参数的具体含义是什么，如何和`ctrl`信号对应
 
 ### 触觉传感器
@@ -23,3 +23,4 @@ batch_size=128 与 num_envs=4, unroll_length=5 不匹配。Brax 期望 batch_siz
 - TensorBoard 转发问题
     - 使用`train_reorient.py --use_tb`启动训练脚本
     - 使用`tensorboard --logdir logs`启动TensorBoard服务
+- TensorBoard 中出现了过多的训练指标，出现了不知道原因的eval环境标签

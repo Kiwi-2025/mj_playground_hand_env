@@ -19,10 +19,12 @@ import mediapy as media
 from para_env.para_hand_env import TestTask
 from para_env.reorient_env import ParaHandReorient
 from para_env.grasp_env import ParaHandGrasp
+from para_env.rotateZ_env import ParaHandRotateZ
 from mujoco_playground import registry
 
 # env = ParaHandReorient()
-env = ParaHandGrasp()
+# env = ParaHandGrasp()
+env = ParaHandRotateZ()
 # env = TestTask()
 
 jit_reset = jax.jit(env.reset)
@@ -55,7 +57,7 @@ for i in range(total_steps):
 # jp.save("./middle_finger_quats.npy", jp.stack(middle_quats))
 frames = env.render(rollout, height=480, width=640, camera=camera)
 
-output_path = f"./video/grasp.mp4"
+output_path = f"./video/notendon.mp4"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 media.write_video(output_path, frames, fps=30)
 print(f"视频已保存到 {output_path}")

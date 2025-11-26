@@ -31,15 +31,11 @@ from mujoco_playground.config import manipulation_params
 import tensorboardX
 import wandb
 
-import para_env
-from para_env.config import params
-
 
 xla_flags = os.environ.get("XLA_FLAGS", "")
 xla_flags += " --xla_gpu_triton_gemm_any=True"
 os.environ["XLA_FLAGS"] = xla_flags
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-# os.environ["MUJOCO_GL"] = "egl"
 
 # Ignore the info logs from brax
 logging.set_verbosity(logging.WARNING)
@@ -56,8 +52,8 @@ warnings.filterwarnings("ignore", category=UserWarning, module="absl")
 
 _ENV_NAME = flags.DEFINE_string(
     "env_name",
-    "ParaHandReorient",
-    f"Name of the environment. One of {', '.join(para_env.ALL_ENVS)}", 
+    "LeapCubeReorient",
+    f"Name of the environment. One of {', '.join(registry.ALL_ENVS)}",
 )
 _IMPL = flags.DEFINE_enum("impl", "jax", ["jax", "warp"], "MJX implementation")
 _VISION = flags.DEFINE_boolean("vision", False, "Use vision input")
@@ -149,36 +145,45 @@ _LOG_TRAINING_METRICS = flags.DEFINE_boolean(
 )
 _TRAINING_METRICS_STEPS = flags.DEFINE_integer(
     "training_metrics_steps",
-    10_000,
+    1_000_000,
     "Number of steps between logging training metrics. Increase if training"
     " experiences slowdown.",
 )
 
 
 def get_rl_config(env_name: str) -> config_dict.ConfigDict:
-    print(f"env_name:{env_name}")
-    if env_name in para_env.ALL_ENVS:
-        return params.brax_ppo_config(env_name, _IMPL.value)
-        
-    raise ValueError(f"Env {env_name} not found in {para_env.ALL_ENVS}.")
+  if env_name in mujoco_playground.manipulation._envs:
+    if _VISION.value:
+      return manipulation_params.brax_vision_ppo_config(env_name, _IMPL.value)
+    return manipulation_params.brax_ppo_config(env_name, _IMPL.value)
+  elif env_name in mujoco_playground.locomotion._envs:
+    return locomotion_params.brax_ppo_config(env_name, _IMPL.value)
+  elif env_name in mujoco_playground.dm_control_suite._envs:
+    if _VISION.value:
+      return dm_control_suite_params.brax_vision_ppo_config(
+          env_name, _IMPL.value
+      )
+    return dm_control_suite_params.brax_ppo_config(env_name, _IMPL.value)
+
+  raise ValueError(f"Env {env_name} not found in {registry.ALL_ENVS}.")
 
 
 def rscope_fn(full_states, obs, rew, done):
-    """
-    All arrays are of shape (unroll_length, rscope_envs, ...)
-    full_states: dict with keys 'qpos', 'qvel', 'time', 'metrics'
-    obs: nd.array or dict obs based on env configuration
-    rew: nd.array rewards
-    done: nd.array done flags
-    """
-    # Calculate cumulative rewards per episode, stopping at first done flag
-    done_mask = jp.cumsum(done, axis=0)
-    valid_rewards = rew * (done_mask == 0)
-    episode_rewards = jp.sum(valid_rewards, axis=0)
-    print(
-        "Collected rscope rollouts with reward"
-        f" {episode_rewards.mean():.3f} +- {episode_rewards.std():.3f}"
-    )
+  """
+  All arrays are of shape (unroll_length, rscope_envs, ...)
+  full_states: dict with keys 'qpos', 'qvel', 'time', 'metrics'
+  obs: nd.array or dict obs based on env configuration
+  rew: nd.array rewards
+  done: nd.array done flags
+  """
+  # Calculate cumulative rewards per episode, stopping at first done flag
+  done_mask = jp.cumsum(done, axis=0)
+  valid_rewards = rew * (done_mask == 0)
+  episode_rewards = jp.sum(valid_rewards, axis=0)
+  print(
+      "Collected rscope rollouts with reward"
+      f" {episode_rewards.mean():.3f} +- {episode_rewards.std():.3f}"
+  )
 
 
 def main(argv):
@@ -187,7 +192,7 @@ def main(argv):
   del argv
 
   # Load environment configuration
-  env_cfg = para_env.get_default_config(_ENV_NAME.value)
+  env_cfg = registry.get_default_config(_ENV_NAME.value)
   env_cfg["impl"] = _IMPL.value
 
   ppo_params = get_rl_config(_ENV_NAME.value)
@@ -243,7 +248,7 @@ def main(argv):
   if _VISION.value:
     env_cfg.vision = True
     env_cfg.vision_config.render_batch_size = ppo_params.num_envs
-  env = para_env.load(_ENV_NAME.value, config=env_cfg)
+  env = registry.load(_ENV_NAME.value, config=env_cfg)
   if _RUN_EVALS.present:
     ppo_params.run_evals = _RUN_EVALS.value
   if _LOG_TRAINING_METRICS.present:
@@ -274,7 +279,6 @@ def main(argv):
     wandb.config.update({"env_name": _ENV_NAME.value})
 
   # Initialize TensorBoard if required
-  print(f"_USE_TB.value: {_USE_TB.value}, _PLAY_ONLY.value: {_PLAY_ONLY.value}")
   if _USE_TB.value and not _PLAY_ONLY.value:
     writer = tensorboardX.SummaryWriter(logdir)
 
@@ -322,7 +326,7 @@ def main(argv):
     network_factory = network_fn
 
   if _DOMAIN_RANDOMIZATION.value:
-    training_params["randomization_fn"] = para_env.get_domain_randomizer(
+    training_params["randomization_fn"] = registry.get_domain_randomizer(
         _ENV_NAME.value
     )
 
@@ -362,14 +366,11 @@ def main(argv):
   def progress(num_steps, metrics):
     times.append(time.monotonic())
 
-    if len(times) == 2:
-        print(f"✅ XLA Compilation finished! (Time taken: {times[-1] - times[0]:.2f}s)")
-
     # Log to Weights & Biases
     if _USE_WANDB.value and not _PLAY_ONLY.value:
       wandb.log(metrics, step=num_steps)
 
-    # Log to TensorBoard, 写入 metrics 中的参数
+    # Log to TensorBoard
     if _USE_TB.value and not _PLAY_ONLY.value:
       for key, value in metrics.items():
         writer.add_scalar(key, value, num_steps)
@@ -386,7 +387,7 @@ def main(argv):
   # Load evaluation environment.
   eval_env = None
   if not _VISION.value:
-    eval_env = para_env.load(_ENV_NAME.value, config=env_cfg)
+    eval_env = registry.load(_ENV_NAME.value, config=env_cfg)
   num_envs = 1
   if _VISION.value:
     num_envs = env_cfg.vision_config.render_batch_size
@@ -397,7 +398,7 @@ def main(argv):
     from rscope import brax as rscope_utils
 
     if not _VISION.value:
-      rscope_env = para_env.load(_ENV_NAME.value, config=env_cfg)
+      rscope_env = registry.load(_ENV_NAME.value, config=env_cfg)
       rscope_env = wrapper.wrap_for_brax_training(
           rscope_env,
           episode_length=ppo_params.episode_length,
@@ -422,7 +423,6 @@ def main(argv):
       rscope_handle.dump_rollout(params)
 
   # Train or load the model
-  print("Starting training...")
   make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
       environment=env,
       progress_fn=progress,
@@ -489,27 +489,14 @@ def main(argv):
   render_every = 2
   fps = 1.0 / eval_env.dt / render_every
   print(f"FPS for rendering: {fps}")
-  # scene options
   scene_option = mujoco.MjvOption()
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = False
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
- 
-  # 设置摄像机参数
-  camera = mujoco.MjvCamera()
-  camera.type = mujoco.mjtCamera.mjCAMERA_TRACKING
-  camera.trackbodyid = env.mj_model.body("palm").id  # 跟踪手掌
-  camera.distance = 0.4           # 缩短摄像机距离
-  camera.azimuth = 150           # 调整方位角以获得更好的视角
-  camera.elevation = -20          # 从略微向下的角度观察
-
-
   for i, rollout in enumerate(trajectories):
     traj = rollout[::render_every]
     frames = eval_env.render(
-        traj, height=480, width=640, 
-        camera=camera,
-        scene_option=scene_option
+        traj, height=480, width=640, scene_option=scene_option
     )
     media.write_video(f"rollout{i}.mp4", frames, fps=fps)
     print(f"Rollout video saved as 'rollout{i}.mp4'.")

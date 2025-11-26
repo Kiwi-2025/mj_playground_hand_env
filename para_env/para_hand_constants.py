@@ -6,6 +6,9 @@ PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感
 # 任务对应的 XML 文件路径
 TASK_XML_FILES = {
     "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand.xml",
+    # "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_notac.xml",
+    # "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_obj.xml",
+    "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_obj_notendon.xml",
     "grasp": ROOT_PATH / "xmls" / "grasp" / "grasp_hand.xml",
 }
 

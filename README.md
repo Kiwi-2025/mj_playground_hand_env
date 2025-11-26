@@ -23,7 +23,7 @@
 - playground 的安装，不建议PyPI安装playground，建议通过clone后放到某个位置然后通过`pip install -e ".[all]"`将其设置为开发者模式，因为下面的方法需要篡改这个包
 - mujoco_menagerie 的下载配置问题
   - 方案1：删除playground中检查mujoco_menagerie的函数，具体位置在 mjx_env.py 的 `ensure_menagerie_exists`函数中
-  - 方案2：手动添加 mujoco_menagerie 到 `./mujoco_playground/mujoco_playground/external_dep/` 中,直接从远程clone这个仓库的时候会发现并没有这个文件夹，很正常，这个文件夹是在第一次你尝试导入的时候自动添加的，这时我们只需要 mkdir 指令生成这个文件夹然后进去clone即可
+  - 方案2：手动添加 mujoco_menagerie 到 `./mujoco_playground/mujoco_playground/external_deps/` 中,直接从远程clone这个仓库的时候会发现并没有这个文件夹，很正常，这个文件夹是在第一次你尝试导入的时候自动添加的，这时我们只需要 mkdir 指令生成这个文件夹然后进去clone即可（注意不要漏掉最后的s）
 
 ### 从零安装相关依赖
 如果您对上面我提到的安装步骤感到担忧，或者您希望适配自己的电脑，可以按照下面的步骤进行。徒手安装可以参考 [https://zhuanlan.zhihu.com/p/1913023899534354252] 但是不需要安装低版本jax而是使用3.12+的Python解释器
