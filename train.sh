@@ -1,3 +1,3 @@
-python train_reorient.py \
-  --env_name=ParaHandReorient \
+python train.py \
+  --env_name=ParaHandRotateZ \
   --use_tb

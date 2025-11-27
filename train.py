@@ -362,8 +362,8 @@ def main(argv):
   def progress(num_steps, metrics):
     times.append(time.monotonic())
 
-    if len(times) == 2:
-        print(f"✅ XLA Compilation finished! (Time taken: {times[-1] - times[0]:.2f}s)")
+    # if len(times) == 2:
+    #     print(f"✅ XLA Compilation finished! (Time taken: {times[-1] - times[0]:.2f}s)")
 
     # Log to Weights & Biases
     if _USE_WANDB.value and not _PLAY_ONLY.value:

@@ -22,8 +22,10 @@ def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
       ctrl_dt=0.02,
       sim_dt=0.001,
-
+    #   action_repeat=20,
       action_scale=0.5,
+    #   ctrl_dt=0.05,
+    #   sim_dt=0.01,
       action_repeat=1,
       ema_alpha=1.0,
       episode_length=500,
@@ -119,13 +121,13 @@ class ParaHandRotateZ(BaseEnv):
         # Randomizes hand pos
         rng, pos_rng, vel_rng = jax.random.split(rng, 3)
         
-        # q_hand = self._default_pose
+        q_hand = self._default_pose
         # q_hand = jp.zeros(consts.NQ_POS)
-        q_hand = jp.clip(
-            self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ_POS,)),
-            self._lowers,
-            self._uppers,
-        )
+        # q_hand = jp.clip(
+        #     self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ_POS,)),
+        #     self._lowers,
+        #     self._uppers,
+        # )
         # jax.debug.print("q_hand shape:{}", q_hand.shape)
         
         v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
@@ -135,10 +137,12 @@ class ParaHandRotateZ(BaseEnv):
         
         # Randomizes cube qpos and qvel
         rng, p_rng, quat_rng = jax.random.split(rng, 3)
-        start_pos = jp.array([0.0, 0.0, 0.22]) + jax.random.uniform(
-            p_rng, (3,), minval=-0.01, maxval=0.01
-        )
-        start_quat = para_hand_base.uniform_quat(quat_rng)
+        start_pos = jp.array([0.0, 0.0, 0.23])
+        # start_pos = jp.array([0.0, 0.0, 0.23]) + jax.random.uniform(
+        #     p_rng, (3,), minval=-0.01, maxval=0.01
+        # )
+        # start_quat = para_hand_base.uniform_quat(quat_rng)
+        start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
         
         # 固定初始位置和姿态进行测试
         # start_pos = jp.array([0.0, 0.0, 0.21])
@@ -222,7 +226,7 @@ class ParaHandRotateZ(BaseEnv):
         """
         check whether episode is done, e.g. due to nan values or cube falling below floor
         """
-        fall_termination = self.get_cube_position(data)[2] < -0.05
+        fall_termination = self.get_cube_position(data)[2] < 0.1
         return fall_termination
 
     def _get_obs(
@@ -291,6 +295,13 @@ class ParaHandRotateZ(BaseEnv):
         cube_pos_error = palm_pos - cube_pos
         cube_angvel = self.get_cube_angvel(data)
         cube_linvel = self.get_cube_linvel(data)
+
+        # debug info
+        jax.debug.print("cube pos: {}", cube_pos)
+        jax.debug.print("palm pos: {}", palm_pos)
+        jax.debug.print("cube pos error: {}", cube_pos_error)
+        jax.debug.print("cube angvel: {}", cube_angvel)
+        jax.debug.print("cube linvel: {}", cube_linvel)
 
         return {
             "angvel": self._reward_angvel(cube_angvel, cube_pos_error),
