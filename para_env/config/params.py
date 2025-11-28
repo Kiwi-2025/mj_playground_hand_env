@@ -69,7 +69,7 @@ def brax_ppo_config(
         rl_config.learning_rate = 3e-4
         rl_config.entropy_cost = 1e-2
         rl_config.num_envs = 8192
-        rl_config.batch_size = 10240
+        rl_config.batch_size = 256
         rl_config.num_resets_per_eval = 1
         rl_config.network_factory = config_dict.create(
             policy_hidden_layer_sizes=(512, 256, 128),
@@ -77,7 +77,6 @@ def brax_ppo_config(
             policy_obs_key="state",
             value_obs_key="privileged_state",
         )
-    
     
     else:
         raise ValueError(f"No RL config found for environment: {env_name}")

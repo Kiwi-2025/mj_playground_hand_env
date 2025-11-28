@@ -1,13 +1,5 @@
 # TODO List
 ## Issues to investigate and resolve
-- 调整PPO超参数互相冲突问题，现在``num_minibatches``和``batch_size``互相冲突，导致无法同时设置较小的batch size和较多的minibatches。
-batch_size=128 与 num_envs=4, unroll_length=5 不匹配。Brax 期望 batch_size = (num_envs * unroll_length)，或按 minibatch 划分后维度一致。
-你的设定：num_envs * unroll_length = 4*5=20 << 128，Brax 在构造归一化统计期望“每个 batch 有 25 条并行轨迹”（128/5=25），但实际只有 4.
-    - 25可能为机器人手的自由度数目，需要确认
-
-
-
-- `action_matrix` 需要查明含义，各个参数的具体含义是什么，如何和`ctrl`信号对应
 
 ### 触觉传感器
 - 按照原先触觉力提取器，要求长方体的传感器单元才可以，现在换成了球形，可能会出现影响
@@ -24,3 +16,7 @@ batch_size=128 与 num_envs=4, unroll_length=5 不匹配。Brax 期望 batch_siz
     - 使用`train_reorient.py --use_tb`启动训练脚本
     - 使用`tensorboard --logdir logs`启动TensorBoard服务
 - TensorBoard 中出现了过多的训练指标，出现了不知道原因的eval环境标签
+- 调整PPO超参数互相冲突问题，现在``num_minibatches``和``batch_size``互相冲突，导致无法同时设置较小的batch size和较多的minibatches。
+batch_size=128 与 num_envs=4, unroll_length=5 不匹配。Brax 期望 batch_size = (num_envs * unroll_length)，或按 minibatch 划分后维度一致。
+你的设定：num_envs * unroll_length = 4*5=20 << 128，Brax 在构造归一化统计期望“每个 batch 有 25 条并行轨迹”（128/5=25），但实际只有 4.
+

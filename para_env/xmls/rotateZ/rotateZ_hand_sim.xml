@@ -10,11 +10,11 @@
     <option gravity="0 0 -9.81"/>
     <keyframe>
         <key name="home" 
-            qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-            qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" 
-            ctrl="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+            qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+            qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" 
+            ctrl="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
         />
-        <!-- qpos 32 qvel 31 ctrl 18 -->
+        <!-- qpos 26 qvel 25 ctrl 19 -->
     </keyframe>
     <default>
         <geom solref="0.001 1" solimp="0.99 0.999 0.0001"/>
@@ -28,44 +28,7 @@
             <geom contype="0" conaffinity="0" group="2" density="0"/>
         </default>
     </default>
-    <!-- <contact>
-        <exclude body1="palm" body2="thumb_link_1"/>
-        <exclude body1="palm" body2="index_link_1"/>
-        <exclude body1="palm" body2="middle_link_1"/>
-        <exclude body1="palm" body2="ring_link_1"/>
-        <exclude body1="palm" body2="little_link_1"/>
-        <exclude body1="palm" body2="thumb_link_2"/>
-        <exclude body1="palm" body2="index_link_2"/>
-        <exclude body1="palm" body2="middle_link_2"/>
-        <exclude body1="palm" body2="ring_link_2"/>
-        <exclude body1="palm" body2="little_link_2"/>
-        <exclude body1="palm" body2="thumb_link_3"/>
-        <exclude body1="palm" body2="index_link_3"/>
-        <exclude body1="palm" body2="middle_link_3"/>
-        <exclude body1="palm" body2="ring_link_3"/>
-        <exclude body1="palm" body2="little_link_3"/>
-    </contact> -->
     <asset>
-        <!-- <mesh name="thumb_base_link" file="./objs/thumb_base_link.obj"/>
-        <mesh name="thumb_link_1" file="./objs/thumb_link_1.obj"/>
-        <mesh name="thumb_link_2" file="./objs/thumb_link_2.obj"/>
-        <mesh name="thumb_link_3" file="./objs/thumb_link_3.obj"/>
-        <mesh name="index_base_link" file="./objs/index_base_link.obj"/>
-        <mesh name="index_link_1" file="./objs/index_link_1.obj"/>
-        <mesh name="index_link_2" file="./objs/index_link_2.obj"/>
-        <mesh name="index_link_3" file="./objs/index_link_3.obj"/>
-        <mesh name="middle_base_link" file="./objs/middle_base_link.obj"/>
-        <mesh name="middle_link_1" file="./objs/middle_link_1.obj"/>
-        <mesh name="middle_link_2" file="./objs/middle_link_2.obj"/>
-        <mesh name="middle_link_3" file="./objs/middle_link_3.obj"/>
-        <mesh name="ring_base_link" file="./objs/ring_base_link.obj"/>
-        <mesh name="ring_link_1" file="./objs/ring_link_1.obj"/>
-        <mesh name="ring_link_2" file="./objs/ring_link_2.obj"/>
-        <mesh name="ring_link_3" file="./objs/ring_link_3.obj"/>
-        <mesh name="little_base_link" file="./objs/little_base_link.obj"/>
-        <mesh name="little_link_1" file="./objs/little_link_1.obj"/>
-        <mesh name="little_link_2" file="./objs/little_link_2.obj"/>
-        <mesh name="little_link_3" file="./objs/little_link_3.obj"/> -->
         <mesh name="thumb_base_link" vertex="0.0 0.0 -0.0075 0.04 0.0 -0.0075 0.03 0.01 -0.0075 0.01 0.01 -0.0075 0.0 0.0 0.0075 0.04 0.0 0.0075 0.03 0.01 0.0075 0.01 0.01 0.0075" normal="-0.7734590803390136 -0.3203772410170408 -0.5469181606780271 0.7734590803390136 -0.3203772410170408 -0.5469181606780271 0.2971085791188998 0.7172835612062476 -0.6302624731310217 -0.2971085791188997 0.7172835612062475 -0.6302624731310217 -0.7734590803390136 -0.32037724101704074 0.5469181606780271 0.7734590803390138 -0.32037724101704057 0.5469181606780271 0.29710857911889976 0.7172835612062477 0.6302624731310216 -0.29710857911889976 0.7172835612062476 0.6302624731310217" face="1 0 3 3 2 1 7 4 5 5 6 7 5 4 1 1 4 0 6 5 2 2 5 1 4 7 0 0 7 3 7 6 3 3 6 2"/>
         <mesh name="thumb_link_1" vertex="0.0 0.0 -0.0075 0.04 0.0 -0.0075 0.03 0.01 -0.0075 0.01 0.01 -0.0075 0.0 0.0 0.0075 0.04 0.0 0.0075 0.03 0.01 0.0075 0.01 0.01 0.0075" normal="-0.7734590803390136 -0.3203772410170408 -0.5469181606780271 0.7734590803390136 -0.3203772410170408 -0.5469181606780271 0.2971085791188998 0.7172835612062476 -0.6302624731310217 -0.2971085791188997 0.7172835612062475 -0.6302624731310217 -0.7734590803390136 -0.32037724101704074 0.5469181606780271 0.7734590803390138 -0.32037724101704057 0.5469181606780271 0.29710857911889976 0.7172835612062477 0.6302624731310216 -0.29710857911889976 0.7172835612062476 0.6302624731310217" face="1 0 3 3 2 1 7 4 5 5 6 7 5 4 1 1 4 0 6 5 2 2 5 1 4 7 0 0 7 3 7 6 3 3 6 2"/>
         <mesh name="thumb_link_2" vertex="0.0 0.0 -0.0075 0.025 0.0 -0.0075 0.0175 0.01 -0.0075 0.007500000000000001 0.01 -0.0075 0.0 0.0 0.0075 0.025 0.0 0.0075 0.0175 0.01 0.0075 0.007500000000000001 0.01 0.0075" normal="-0.7464925414001442 -0.3732462707000721 -0.5508503490444955 0.7464925414001442 -0.3732462707000721 -0.5508503490444956 0.351257248032334 0.702514496064668 -0.618944043128098 -0.351257248032334 0.702514496064668 -0.618944043128098 -0.7464925414001442 -0.3732462707000721 0.5508503490444955 0.7464925414001442 -0.373246270700072 0.5508503490444956 0.351257248032334 0.7025144960646681 0.618944043128098 -0.351257248032334 0.702514496064668 0.618944043128098" face="1 0 3 3 2 1 7 4 5 5 6 7 5 4 1 1 4 0 6 5 2 2 5 1 4 7 0 0 7 3 7 6 3 3 6 2"/>
@@ -88,73 +51,48 @@
         <mesh name="little_link_3" vertex="0.0 0.0 -0.0075 0.025 0.0 -0.0075 0.0175 0.01 -0.0075 0.007500000000000001 0.01 -0.0075 0.0 0.0 0.0075 0.025 0.0 0.0075 0.0175 0.01 0.0075 0.007500000000000001 0.01 0.0075" normal="-0.7464925414001442 -0.3732462707000721 -0.5508503490444955 0.7464925414001442 -0.3732462707000721 -0.5508503490444956 0.351257248032334 0.702514496064668 -0.618944043128098 -0.351257248032334 0.702514496064668 -0.618944043128098 -0.7464925414001442 -0.3732462707000721 0.5508503490444955 0.7464925414001442 -0.373246270700072 0.5508503490444956 0.351257248032334 0.7025144960646681 0.618944043128098 -0.351257248032334 0.702514496064668 0.618944043128098" face="1 0 3 3 2 1 7 4 5 5 6 7 5 4 1 1 4 0 6 5 2 2 5 1 4 7 0 0 7 3 7 6 3 3 6 2"/>
         <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="1 1 1" rgb2="0 0 0" markrgb="0 0 0" width="300" height="300"/>
         <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0"/>
-        <!-- <texture name="cube" type="cube" fileup="./para_env/xmls/reorient/reorientation_cube_textures/fileup.png"
-            fileback="./para_env/xmls/reorient/reorientation_cube_textures/fileback.png" filedown="./para_env/xmls/reorient/reorientation_cube_textures/filedown.png"
-            filefront="./para_env/xmls/reorient/reorientation_cube_textures/filefront.png" fileleft="./para_env/xmls/reorient/reorientation_cube_textures/fileleft.png"
-            fileright="./para_env/xmls/reorient/reorientation_cube_textures/fileright.png"/>
-        <material name="cube" texture="cube"/>
-        <texture name="graycube" type="cube" fileup="./para_env/xmls/reorient/reorientation_cube_textures/grayup.png"
-            fileback="./para_env/xmls/reorient/reorientation_cube_textures/grayback.png" filedown="./para_env/xmls/reorient/reorientation_cube_textures/graydown.png"
-            filefront="./para_env/xmls/reorient/reorientation_cube_textures/grayfront.png" fileleft="./para_env/xmls/reorient/reorientation_cube_textures/grayleft.png"
-            fileright="./para_env/xmls/reorient/reorientation_cube_textures/grayright.png"/>
-        <material name="graycube" texture="graycube"/>
-        <texture name="dexcube" type="2d" file="./para_env/xmls/reorient/reorientation_cube_textures/dex_cube.png"/>
-        <material name="dexcube" texture="dexcube"/>
-        <mesh name="cube_mesh" file="./para_env/xmls/reorient/meshes/dex_cube.obj" scale="0.035 0.035 0.035"/> -->
     </asset>
-    <!-- 导入小道具 cube 的xml文件 -->
-    <!-- <include file="./reorientation_cube.xml"/> -->
-    <!-- <include file="/home/rvsa/mj_playground_hand_env/para_env/xmls/cube/reo"> -->
     <worldbody>
         <!-- 一些辅助元素 -->
         <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="1" friction="1 0.05 0.05" solref="0.001 1" solimp="0.98 0.99 0.001"/>
         <!-- 手的定义 -->
         <body name="palm" pos="0 0 0.15" euler="3.14 3.3 0" childclass="hand">
-            <joint name="palm_slide_x" type="slide" axis="1 0 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+            <!-- <joint name="palm_slide_x" type="slide" axis="1 0 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
             <joint name="palm_slide_y" type="slide" axis="0 1 0" range="-.5 .5" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
             <joint name="palm_slide_z" type="slide" axis="0 0 1" range="-.2 .12" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
             <joint name="palm_rotate_x" type="hinge" axis="1 0 0" range="-1.57 1.57" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
             <joint name="palm_rotate_y" type="hinge" axis="0 1 0" range="-1.57 1.57" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
-            <joint name="palm_rotate_z" type="hinge" axis="0 0 1" range="-3.14 3.14" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+            <joint name="palm_rotate_z" type="hinge" axis="0 0 1" range="-3.14 3.14" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/> -->
             <geom type="box" size="0.045 0.045 0.002" rgba="1 1 1 1" density="200"/>
             <geom type="box" size="0.0375 0.045 0.01" pos="-0.0075 0 0.012" rgba="1 1 1 1" density="200"/>
-            <body name="thumb_base_link" pos="-0.035 -0.02 -0.005" euler="-0.785 0.0 -1.57">
-                <geom type="sphere" size=".002"/>
-                <site name="thumb_ty_1_1" pos="0 0 0.01" size="0.001" rgba="0 0.9 0 1"/>
-                <site name="thumb_ty_2_1" pos="0 0 -0.01" size="0.001" rgba="0 0.9 0 1"/>
-                <site name="thumb_tx_1_1" pos="0 0.01 0" size="0.001" rgba="0 0.9 0 1"/>
-                <site name="thumb_tx_2_1" pos="0 -0.01 0" size="0.001" rgba="0 0.9 0 1"/>
-                <site name="thumb_t12" pos="0 0.01 0" size="0.001" rgba="0 0 0.9 1"/>
-                <site name="thumb_t0" pos="-0.01 0.01 0" size="0.001" rgba="0 0 0.9 1"/>
-                <body name="thumb_link_1" pos="0.015 0 0">
-                    <joint name="thumb_universal_1" pos="0 0 0" axis="0 0 1" damping="0.1"/>
-                    <joint name="thumb_universal_2" pos="0 0 0" axis="0 1 0" damping="0.1"/>
-                    <geom type="mesh" rgba="1 1 1 1" mesh="thumb_link_1"/>
-                    <site name="thumb_ty_1_2" pos="0 0 0.01" size="0.001" rgba="0 0.9 0 1"/>
-                    <site name="thumb_ty_2_2" pos="0 0 -0.01" size="0.001" rgba="0 0.9 0 1"/>
-                    <site name="thumb_tx_1_2" pos="0 0.01 0" size="0.001" rgba="0 0.9 0 1"/>
-                    <site name="thumb_tx_2_2" pos="0 -0.01 0" size="0.001" rgba="0 0.9 0 1"/>
-                    <site name="thumb_t1_1_1" pos="0.008 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
-                    <site name="thumb_t2_1_1" pos="0.008 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
-                    <site name="thumb_t1_1_2" pos="0.032 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
-                    <site name="thumb_t2_1_2" pos="0.032 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
-                    <body name="thumb_link_2" pos="0.04 0 0">
-                        <joint name="thumb_joint_1" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 3.14"/>
-                        <geom type="mesh" rgba="1 1 1 1" mesh="thumb_link_2"/>
-                        <site name="thumb_t1_2_1" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
-                        <site name="thumb_t2_2_1" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
-                        <site name="thumb_t1_2_2" pos="0.019000000000000003 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
-                        <site name="thumb_t2_2_2" pos="0.019000000000000003 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
-                        <body name="thumb_link_3" pos="0.025 0 0">
-                            <joint name="thumb_joint_2" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 3.14"/>
+            <!-- 拇指基座 -->
+            <body name="thumb_base_link" pos="-0.035 -0.02 0.01" euler="1.57 -1.57 0.0">
+                <joint name="thumb_joint_0" type="hinge" axis="0 1 0" range="-0.1 0.1" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+                <geom conaffinity="0" contype="0" type="sphere" size=".002"/>
+                <geom type="box" size="0.005 0.005 0.005" rgba="1 0 0 0.3" density="1000"/>
+                <!-- 拇指第一节 -->
+                <body name="thumb_link_1" pos="0.01 0.01 0.0" euler="0.0 0.0 0.785">
+                    <joint name="thumb_joint_1" type="hinge" axis="0 1 0" range="0 0.1" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+                    <geom conaffinity="0" contype="0" type="sphere" size=".002"/>
+                    <geom type="box" size="0.007 0.005 0.005" rgba="0 1 0 0.3" density="1000"/>
+                    <!-- 拇指第二节 -->
+                    <body name="thumb_link_2" pos="0.008 0 0.005" euler="-1.57 0 0">
+                        <joint name="thumb_joint_2" type="hinge" axis="0 0 1" range="0 0.1" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+                        <geom conaffinity="0" contype="0" type="mesh" rgba="1 1 1 1" mesh="thumb_link_2"/>
+                        <geom type="mesh" mesh="thumb_link_2" rgba="0 0 1 1" density="1000"/>
+                        <geom type="box" pos="0.0125 0.005 0" size="0.005 0.005 0.0075" name="thumb_link_2_box_center" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001" rgba="0 0 1 0"/>
+                        <geom type="box" pos="0.019849544644419077 0.005196786170816701 0" size="0.005477355448802637 0.001 0.0075" euler="0 0 -0.925" name="thumb_link_2_box_slope1" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001" rgba="0 0 1 0"/>
+                        <geom type="box" pos="0.0051504553555809275 0.004803213829183299 0" size="0.005477355448802637 0.001 0.0075" euler="0 0 0.925" name="thumb_link_2_box_slope2" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001" rgba="0 0 1 0"/>
+                        <geom type="box" pos="0.0125 0.001 0" size="0.0105 0.001 0.0075" euler="0 0 0" name="thumb_link_2_box_bottom" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001" rgba="0 0 1 0"/>
+                        <!-- 拇指第三节 -->
+                        <body name="thumb_link_3" pos="0.025 0 0" euler="0 0 0">
+                            <joint name="thumb_joint_3" type="hinge" axis="0 0 1" range="0 0.1" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+                            <geom conaffinity="0" contype="0" type="mesh" rgba="1 1 1 1" mesh="thumb_link_3"/>
+                            <geom type="mesh" mesh="thumb_link_3" rgba="1 1 0 1" density="1000"/>
+                            <geom type="box" pos="0.0125 0.005 0" size="0.005 0.005 0.0075" name="thumb_link_3_box_center" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001" rgba="0 0 1 0"/>
+                            <geom type="box" pos="0.0051504553555809275 0.004803213829183299 0" size="0.005477355448802637 0.001 0.0075" euler="0 0 0.925" name="thumb_link_3_box_slope2" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001" rgba="0 0 1 0"/>
                             <geom type="sphere" pos="0.025 0.006 0" size="0.0075" rgba="1 1 1 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <geom type="capsule" euler="0 1.57 0" pos="0.02 0.006 0" size="0.0075 0.005000000000000001" rgba="1 1 1 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
-                            <geom type="mesh" rgba="1 1 1 1" mesh="thumb_link_3"/>
-                            <site name="thumb_t1_3" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
-                            <site name="thumb_t2_3" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
-                            <body name="thumb_fingertip" pos="0.02 0.01 0" euler="1.57 0 0">
-                                <geom type="sphere" pos="0 0 0" size=".001" rgba=".9 0 0 .1"/>
-                            </body>
                         </body>
                     </body>
                 </body>
@@ -295,14 +233,13 @@
             </body>
         </body>
         <!-- cube 的定义 -->
-        <body name="cube" pos="0.0 0.0 0.23" quat="1 0 0 0" childclass="cube">
+        <body name="cube" pos="-0.01 0.0 0.2" quat="1 0 0 0" childclass="cube">
             <freejoint name="cube_freejoint"/>
-            <!-- <geom type="mesh" mesh="cube_mesh" material="dexcube" contype="0" conaffinity="0" density="0" group="2" scale="0.025 0.025 0.025"/> -->
-            <geom name="cube" type="box" size=".03 .03 .03" mass=".108" group="0" rgba="0 1 0 1"/>
+            <geom name="cube" type="box" size=".024 .024 .024" mass=".108" group="0" rgba="0 1 0 1"/>
             <site name="cube_center" pos="0 0 0" group="4"/>
         </body>
     </worldbody>
-    <tendon>
+    <!-- <tendon>
         <spatial name="thumb_tendon_x1" width=".0005" rgba=".9 .0 .0 1">
             <site site="thumb_tx_1_1"/>
             <site site="thumb_tx_1_2"/>
@@ -409,26 +346,43 @@
             <site site="little_t2_2_2"/>
             <site site="little_t2_3"/>
         </spatial>
-    </tendon>
+    </tendon> -->
     <actuator>
-        <motor name="thumb_tendon" tendon="thumb_tendon" ctrllimited="true" ctrlrange="-20 0"/>
+        <!-- <motor name="thumb_tendon" tendon="thumb_tendon" ctrllimited="true" ctrlrange="-20 0"/>
         <position name="thumb_tendon_x1" tendon="thumb_tendon_x1" forcerange="-50 0" forcelimited="true" ctrllimited="true" ctrlrange=" 0 0.03" kp="3" dampratio="1.5"/>
         <position name="thumb_tendon_x2" tendon="thumb_tendon_x2" forcerange="-50 0" forcelimited="true" ctrllimited="true" ctrlrange=" 0 0.03" kp="3" dampratio="1.5"/>
         <position name="thumb_tendon_y1" tendon="thumb_tendon_y1" forcerange="-50 0" forcelimited="true" ctrllimited="true" ctrlrange=" 0 0.03" kp="3" dampratio="1.5"/>
         <position name="thumb_tendon_y2" tendon="thumb_tendon_y2" forcerange="-50 0" forcelimited="true" ctrllimited="true" ctrlrange=" 0 0.03" kp="3" dampratio="1.5"/>
         <motor name="index_tendon" tendon="index_tendon" ctrllimited="true" ctrlrange="-20 0"/>
-        <position name="index_swing" joint="index_swing" ctrllimited="true" ctrlrange="0 0.5" kp="3" dampratio="2"/>
         <motor name="middle_tendon" tendon="middle_tendon" ctrllimited="true" ctrlrange="-20 0"/>
         <motor name="ring_tendon" tendon="ring_tendon" ctrllimited="true" ctrlrange="-20 0"/>
-        <position name="ring_swing" joint="ring_swing" ctrllimited="true" ctrlrange="0 0.5" kp="3" dampratio="2"/>
-        <motor name="little_tendon" tendon="little_tendon" ctrllimited="true" ctrlrange="-20 0"/>
+        <motor name="little_tendon" tendon="little_tendon" ctrllimited="true" ctrlrange="-20 0"/>-->
+        <!-- 魔法电机直接驱动关节 -->
+        <position name="thumb_joint_0" joint="thumb_joint_0" ctrllimited="true" ctrlrange="-1.57 3.14" kp="3"/>
+        <position name="thumb_joint_1" joint="thumb_joint_1" ctrllimited="true" ctrlrange="-1.57 1.57" kp="3"/>
+        <position name="thumb_joint_2" joint="thumb_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
+        <position name="thumb_joint_3" joint="thumb_joint_3" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="index_joint_0" joint="index_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="index_joint_1" joint="index_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="index_joint_2" joint="index_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
+        <position name="middle_joint_0" joint="middle_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="middle_joint_1" joint="middle_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="middle_joint_2" joint="middle_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
+        <position name="ring_joint_0" joint="ring_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="ring_joint_1" joint="ring_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="ring_joint_2" joint="ring_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
+        <position name="little_joint_0" joint="little_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="little_joint_1" joint="little_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
+        <position name="little_joint_2" joint="little_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
+        <position name="index_swing" joint="index_swing" ctrllimited="true" ctrlrange="0 0.5" kp="3" dampratio="2"/>
         <position name="little_swing" joint="little_swing" ctrllimited="true" ctrlrange="0 0.75" kp="3" dampratio="2"/>
-        <position name="palm_slide_x" joint="palm_slide_x" ctrllimited="true" ctrlrange="-.1 .1" kp="3" dampratio="1.5"/>
+        <position name="ring_swing" joint="ring_swing" ctrllimited="true" ctrlrange="0 0.5" kp="3" dampratio="2"/>
+        <!-- <position name="palm_slide_x" joint="palm_slide_x" ctrllimited="true" ctrlrange="-.1 .1" kp="3" dampratio="1.5"/>
         <position name="palm_slide_y" joint="palm_slide_y" ctrllimited="true" ctrlrange="-.1 .1" kp="3" dampratio="1.5"/>
         <position name="palm_slide_z" joint="palm_slide_z" ctrllimited="true" ctrlrange="-.2 .1" kp="3" dampratio="1.5"/>
         <position name="palm_rotate_x" joint="palm_rotate_x" ctrllimited="true" ctrlrange="-.2 .2" kp="3" dampratio="1.5"/>
         <position name="palm_rotate_y" joint="palm_rotate_y" ctrllimited="true" ctrlrange="-.2 .2" kp="3" dampratio="1.5"/>
-        <position name="palm_rotate_z" joint="palm_rotate_z" ctrllimited="true" ctrlrange="-3.14 3.14" kp="3" dampratio="1.5"/>
+        <position name="palm_rotate_z" joint="palm_rotate_z" ctrllimited="true" ctrlrange="-3.14 3.14" kp="3" dampratio="1.5"/> -->
     </actuator>
     <sensor>
         <!-- cube sensor -->
@@ -441,20 +395,15 @@
         <!-- palm pos sensor -->
         <framepos name="palm_pos" objtype="body" objname="palm"/>
         <!-- fingertip pos sensor -->
-        <framepos name="thumb_fingertip_pos" objtype="body" objname="thumb_fingertip"/>
+        <!-- <framepos name="thumb_fingertip_pos" objtype="body" objname="thumb_fingertip"/> -->
         <framepos name="index_fingertip_pos" objtype="body" objname="index_fingertip"/>
         <framepos name="middle_fingertip_pos" objtype="body" objname="middle_fingertip"/>
         <framepos name="ring_fingertip_pos" objtype="body" objname="ring_fingertip"/>
         <framepos name="little_fingertip_pos" objtype="body" objname="little_fingertip"/>
-        <!-- quat sensor -->
-        <!-- <framequat name="index_base_link_quat" objtype="body" objname="index_base_link"/>
-        <framequat name="index_link_1_quat" objtype="body" objname="index_link_1"/>
-        <framequat name="index_link_2_quat" objtype="body" objname="index_link_2"/>
-        <framequat name="index_link_3_quat" objtype="body" objname="index_link_3"/> -->
         <!-- tendon length sensor -->
-        <tendonpos name="index_tendon_length" tendon="index_tendon"/>
+        <!-- <tendonpos name="index_tendon_length" tendon="index_tendon"/>
         <tendonpos name="middle_tendon_length" tendon="middle_tendon"/>
         <tendonpos name="ring_tendon_length" tendon="ring_tendon"/>
-        <tendonpos name="little_tendon_length" tendon="little_tendon"/>
+        <tendonpos name="little_tendon_length" tendon="little_tendon"/> -->
     </sensor>
 </mujoco>

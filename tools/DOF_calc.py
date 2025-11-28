@@ -19,10 +19,10 @@ def calculate_dof(xml_str):
         
         # Calculate DOFs
         dof_info = {
-            "NQ_POS": model.nq,  # Total position DOFs (qpos size)
-            "NQ_VEL": model.nv,  # Total velocity DOFs (qvel size)
-            "NV": model.njnt,  # Total number of joints (physical DOFs)
-            "NU": model.nu,  # Number of actuators (controllable DOFs)
+            "NQ_POS = ": model.nq,  # Total position DOFs (qpos size)
+            "NQ_VEL = ": model.nv,  # Total velocity DOFs (qvel size)
+            "NV = ": model.njnt,  # Total number of joints (physical DOFs)
+            "NU = ": model.nu,  # Number of actuators (controllable DOFs)
         }
         
         # Print DOF information
@@ -40,8 +40,7 @@ if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     # with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/reorient/reorient_hand.xml", "r") as f:
         # xml_file = f.read()
-    with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/old/box_tac_5x5.xml", "r") as f:
+    with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/rotateZ/rotateZ_hand_sim.xml", "r") as f:
         xml_file = f.read()
-        
         
     calculate_dof(xml_file)

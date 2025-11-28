@@ -7,17 +7,24 @@ PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感
 TASK_XML_FILES = {
     "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand.xml",
     # "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_tac.xml",
-    "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_obj.xml",
+    "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_sim_pro.xml",
     # "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_obj_notendon.xml",
     "grasp": ROOT_PATH / "xmls" / "grasp" / "grasp_hand.xml",
 }
 
 # TODO: 确认自由度数量
-NQ_POS = 25     # Number of Positions, 机器人系统的位置自由度数量
-NQ_VEL = 25     # Number of Velocities, 机器人系统的速度自由度数量
-NV = 25         # Number of Velocities, 机器人系统的速度自由度数量，表示机器人有16个关节
-NU = 18         # Number of Actuators, 机器人系统的执行器数量，表示机器人有16个执行器，在这里是说有16个motors
-NT_FORCE=5      # Number of Tactile Forces, 触觉传感器的数量，这里表示有5个触觉传感器，分别对应5根手指
+# NQ_POS = 25     # Number of Positions, 机器人系统的位置自由度数量
+# NQ_VEL = 25     # Number of Velocities, 机器人系统的速度自由度数量
+# NV = 25         # Number of Velocities, 机器人系统的速度自由度数量，表示机器人有16个关节
+# NU = 18         # Number of Actuators, 机器人系统的执行器数量，表示机器人有16个执行器，在这里是说有16个motors
+# NT_FORCE=5      # Number of Tactile Forces, 触觉传感器的数量，这里表示有5个触觉传感器，分别对应5根手指
+
+# 训练用魔法手的关节、执行器、触觉传感器名称列表
+NQ_POS = 20
+NQ_VEL = 19
+NV = 19
+NU = 19
+NT_FORCE = 5
 
 TACTILE_GEOM_NAMES = [
     f"{finger}_markerG_{i}_{j}"
@@ -56,10 +63,10 @@ OUTER_SITE_NAMES = [
 # change these joint names to fit xml file， only load hand related joints
 JOINT_NAMES = [
     # thumb
+    "thumb_joint_0",
     "thumb_joint_1",
     "thumb_joint_2",
-    "thumb_universal_1",
-    "thumb_universal_2",
+    "thumb_joint_3",
     # index
     "index_joint_0",
     "index_joint_1",
@@ -80,12 +87,12 @@ JOINT_NAMES = [
     "little_joint_2",
     "little_swing",
     # palm
-    "palm_rotate_x",
-    "palm_rotate_y",
-    "palm_rotate_z",
-    "palm_slide_x",
-    "palm_slide_y",
-    "palm_slide_z",
+    # "palm_rotate_x",
+    # "palm_rotate_y",
+    # "palm_rotate_z",
+    # "palm_slide_x",
+    # "palm_slide_y",
+    # "palm_slide_z",
 ]
     
 # change these actuator names to fit xml file

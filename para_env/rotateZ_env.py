@@ -20,13 +20,13 @@ from para_env.para_hand_base import ParaHandEnv as BaseEnv
 def default_config() -> config_dict.ConfigDict:
   """config for ParaHandRotateZ environment. Check existing config for details."""
   return config_dict.create(
-      ctrl_dt=0.02,
-      sim_dt=0.001,
+    #   ctrl_dt=0.02,
+    #   sim_dt=0.001,
     #   action_repeat=20,
       action_scale=0.5,
-    #   ctrl_dt=0.05,
-    #   sim_dt=0.01,
-      action_repeat=1,
+      ctrl_dt=0.025,
+      sim_dt=0.005,
+      action_repeat=5,
       ema_alpha=1.0,
       episode_length=500,
       success_threshold=0.1,
@@ -89,8 +89,8 @@ class ParaHandRotateZ(BaseEnv):
 
         # self._target_sid=mjx_env.get_site_ids(self.mj_model, ["target"])
         self._palm_bid = self._mj_model.body("palm").id
-        self._tips_bids = [self._mj_model.body(tip).id for tip in [
-            "thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"
+        self._tips_bids = [self._mj_model.site(tip).id for tip in [
+             "thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"
         ]]
         # self._inner_sids = [self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES]
         # self._outer_sids = [self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES]
@@ -114,6 +114,7 @@ class ParaHandRotateZ(BaseEnv):
         # jax.debug.print("hand qid  shape: {}", self._hand_qids.shape)
         # jax.debug.print("hand dqid shape: {}", self._hand_dqids.shape)
         # jax.debug.print("default pose shape: {}", self._default_pose.shape)
+        # jax.debug.print("default ctrl shape: {}", self._default_ctrl.shape)s
         # jax.debug.print("actuator lowers shape: {}", self._lowers.shape)
         # jax.debug.print("actuator uppers shape: {}", self._uppers.shape)
 
@@ -185,7 +186,8 @@ class ParaHandRotateZ(BaseEnv):
             metrics[f"reward/{k}"] = jp.zeros(())
         metrics["reward/total"] = jp.zeros(())
 
-        obs_history = jp.zeros(self._config.history_len*43)     
+        # obs_history = jp.zeros(self._config.history_len*43)    
+        obs_history = jp.zeros(self._config.history_len*38) # 直接驱动电机 19关节 + 19电机驱动=38
         # TODO：43 = state size (25 joint pos + 18 last act) 注意修改这个尺寸
         # obs_history = jp.zeros(self._config.history_len*34)
         obs = self._get_obs(data, info, obs_history)
@@ -195,6 +197,10 @@ class ParaHandRotateZ(BaseEnv):
 
     def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
         motor_targets = self._default_ctrl + action * self._config.action_scale
+        # debug info
+        # jax.debug.print("step action shape: {}", action.shape)
+        # jax.debug.print("motor targets: {}", motor_targets)
+
         data = mjx_env.step(
             self.mjx_model, state.data, motor_targets, self.n_substeps
         )
@@ -297,11 +303,11 @@ class ParaHandRotateZ(BaseEnv):
         cube_linvel = self.get_cube_linvel(data)
 
         # debug info
-        jax.debug.print("cube pos: {}", cube_pos)
-        jax.debug.print("palm pos: {}", palm_pos)
-        jax.debug.print("cube pos error: {}", cube_pos_error)
-        jax.debug.print("cube angvel: {}", cube_angvel)
-        jax.debug.print("cube linvel: {}", cube_linvel)
+        # jax.debug.print("cube pos: {}", cube_pos)
+        # jax.debug.print("palm pos: {}", palm_pos)
+        # jax.debug.print("cube pos error: {}", cube_pos_error)
+        # jax.debug.print("cube angvel: {}", cube_angvel)
+        # jax.debug.print("cube linvel: {}", cube_linvel)
 
         return {
             "angvel": self._reward_angvel(cube_angvel, cube_pos_error),
