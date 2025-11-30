@@ -1,0 +1,3 @@
+- rotateZ_hand_sim_pro.xml 替换了碰撞为box，使用关节电机直接驱动，14mins完成训练
+- rotateZ_hand_tendon.xml  替换了碰撞为box，使用仿真绳驱动
+- rotateZ_hand_tendon_pro.xml 替换碰撞为capsule，使用仿真绳驱动

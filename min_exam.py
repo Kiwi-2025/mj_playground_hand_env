@@ -40,7 +40,7 @@ camera.elevation = -20          # 从略微向下的角度观察
 
 state = jit_reset(jax.random.PRNGKey(0))
 # 初始化控制信号
-ctrl = jp.zeros(19)
+ctrl = jp.zeros(env.action_size)
 # ctrl = ctrl.at[0].set(-18)
 
 # 分批仿真和渲染

@@ -2,5 +2,8 @@
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
     "python-envs.pythonProjects": [],
-    "python.analysis.extraPaths": ["/home/rvsa/mujoco_playground/mujoco_playground"]
+    "python.analysis.extraPaths": [
+        "/home/rvsa/mujoco_playground/mujoco_playground"
+    ],
+    "editor.fontFamily": "Consolas, 'Source Han Sans', monospace"
 }

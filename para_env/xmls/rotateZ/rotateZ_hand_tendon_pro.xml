@@ -2,9 +2,9 @@
 <!-- Reorient手模型, 5x5 sphere tac sensors -->
 <mujoco model="hand">
     <compiler angle="radian"/>
-    <!-- <option integrator="implicitfast" timestep="0.01"/> -->
+    <option integrator="implicitfast" timestep="0.01"/>
     <!-- <option integrator="implicitfast" /> -->
-    <option integrator="implicitfast" iterations="6" ls_iterations="4" tolerance="1e-3"/>
+    <!-- <option integrator="implicitfast" iterations="6" ls_iterations="4" tolerance="1e-3"/> -->
     <option>
         <flag filterparent="disable"/>
     </option>
@@ -13,9 +13,9 @@
         <key name="home" 
             qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
             qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" 
-            ctrl="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+            ctrl="0 0 0 0 0 0 0 0 0 0 0 0"
         />
-        <!-- qpos 26 qvel 25 ctrl 19 -->
+        <!-- qpos 32 qvel 31 ctrl 18 -->
     </keyframe>
     <default>
         <geom solref="0.001 1" solimp="0.99 0.999 0.0001"/>
@@ -66,20 +66,22 @@
                 <geom conaffinity="0" contype="0" type="sphere" size=".002"/>
                 <!-- 拇指第一节 -->
                 <body name="thumb_link_1" pos="0.01 0.01 0.0" euler="0.0 0.0 0.785">
-                    <joint name="thumb_joint_1" type="hinge" axis="0 1 0" range="0 0.1" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
+                    <joint name="thumb_joint_1" type="hinge" axis="0 0 1" range="0 0.1" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
                     <geom conaffinity="0" contype="0" type="sphere" size=".002"/>
-                    <geom type="box" size="0.007 0.005 0.005" rgba="0 1 0 0.3" density="1000"/>
+                    <geom type="box" size="0.007 0.005 0.005" rgba="0 1 0 0.3" density="200"/>
                     <!-- 拇指第二节 -->
                     <body name="thumb_link_2" pos="0.008 0 0.005" euler="-1.57 0 0">
                         <joint name="thumb_joint_2" type="hinge" axis="0 0 1" range="0 0.1" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
                         <geom conaffinity="0" contype="0" type="mesh" rgba="1 1 1 1" mesh="thumb_link_2"/>
-                        <geom type="mesh" mesh="thumb_link_2" rgba="0 0 1 1" density="1000" class="visual"/>
+                        <geom type="mesh" mesh="thumb_link_2" rgba="0 0 1 1" density="200" class="visual"/>
                         <geom name="thumb_link_2_collision_box" type="box" pos="0.0125 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                         <!-- 拇指第三节 -->
                         <body name="thumb_link_3" pos="0.025 0 0" euler="0 0 0">
                             <joint name="thumb_joint_3" type="hinge" axis="0 0 1" range="0 0.1" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="0.2"/>
                             <geom conaffinity="0" contype="0" type="mesh" rgba="1 1 1 1" mesh="thumb_link_3"/>
-                            <geom type="mesh" mesh="thumb_link_3" rgba="1 1 0 1" density="1000" class="visual"/>
+                            <geom type="mesh" mesh="thumb_link_3" rgba="1 1 0 1" density="200" class="visual"/>
+                            <site name="thumb_t1_3" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                            <site name="thumb_t2_3" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                             <geom name="thumb_link_3_collision_box" type="box" pos="0.0125 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <geom type="sphere" pos="0.025 0.006 0" size="0.0075" rgba="1 1 1 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <site name="thumb_fingertip" pos="0.03 0.006 0" size="0.001" rgba="0.9 0 0 1"/>
@@ -90,18 +92,30 @@
             <body name="index_base_link" pos="0.015 -0.03 0.005" euler="1.57 0.0 0.0">
                 <joint name="index_swing" axis="0 -1 0" range="0 0.5" damping="0.2"/>
                 <geom type="sphere" size=".002"/>
+                <site name="index_t12" pos="0 0 0" size="0.001" rgba="0 0 0.9 1"/>
+                <site name="index_t0" pos="-0.01 0 0" size="0.001" rgba="0 0 0.9 1"/>
                 <body name="index_link_1" pos="0.015 0 0">
                     <joint name="index_joint_0" pos="0 0 0" axis="0 0 1" stiffness="0.2" springref="0.0" damping="0.2" range="0 3.14" frictionloss="0.08"/>
                     <geom name="index_link_1_collision_box" type="box" pos="0.02 0.005 0" size="0.014 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                     <geom type="mesh" rgba="1 1 1 1" mesh="index_link_1" class="visual"/>
+                    <site name="index_t1_1_1" pos="0.008 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="index_t2_1_1" pos="0.008 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="index_t1_1_2" pos="0.032 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="index_t2_1_2" pos="0.032 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                     <body name="index_link_2" pos="0.04 0 0">
                         <joint name="index_joint_1" pos="0 0 0" axis="0 0 1" stiffness="0.2" springref="0.0" damping="0.05" range="0 3.14" frictionloss="0.04"/>
                         <geom name="index_link_2_collision_box" type="box" pos="0.012 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                         <geom type="mesh" rgba="1 1 1 1" mesh="index_link_2" class="visual"/>
+                        <site name="index_t1_2_1" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="index_t2_2_1" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="index_t1_2_2" pos="0.019 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="index_t2_2_2" pos="0.019 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                         <body name="index_link_3" pos="0.025 0 0">
                             <joint name="index_joint_2" pos="0 0 0" axis="0 0 1" stiffness="0.2" springref="0.0" damping="0.01" range="0 1.3" frictionloss="0.02"/>
                             <geom type="sphere" pos="0.025 0.006 0" size="0.0075" rgba="1 1 1 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <geom type="mesh" rgba="1 1 1 1" mesh="index_link_3" class="visual"/>
+                            <site name="index_t1_3" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                            <site name="index_t2_3" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                             <geom name="index_link_3_collision_box" type="box" pos="0.012 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <site name="index_fingertip" pos="0.024 0.01 0" size="0.001" rgba=".9 0 0 .9"/>
                         </body>
@@ -109,18 +123,32 @@
                 </body>
             </body>
             <body name="middle_base_link" pos="0.02 -0.01 0.005" euler="1.57 0.0 0.0">
+                <joint name="middle_swing" axis="0 1 0" range="-0.2 0.2" damping="0.2"/>
+                <geom type="sphere" size=".002"/>
+                <site name="middle_t12" pos="0 0 0" size="0.001" rgba="0 0 0.9 1"/>
+                <site name="middle_t0" pos="-0.01 0 0" size="0.001" rgba="0 0 0.9 1"/>
                 <body name="middle_link_1" pos="0.015 0 0">
                     <joint name="middle_joint_0" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 3.14"/>
                     <geom type="mesh" rgba="1 1 1 1" mesh="middle_link_1" class="visual"/>
                     <geom name="middle_link_1_collision_box" type="box" pos="0.02 0.005 0" size="0.014 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
+                    <site name="middle_t1_1_1" pos="0.008 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="middle_t2_1_1" pos="0.008 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="middle_t1_1_2" pos="0.032 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="middle_t2_1_2" pos="0.032 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                     <body name="middle_link_2" pos="0.04 0 0">
                         <joint name="middle_joint_1" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 3.14"/>
                         <geom type="mesh" rgba="1 1 1 1" mesh="middle_link_2" class="visual"/>
+                        <site name="middle_t1_2_1" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="middle_t2_2_1" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="middle_t1_2_2" pos="0.019000000000000003 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="middle_t2_2_2" pos="0.019000000000000003 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                         <geom name="middle_link_2_collision_box" type="box" pos="0.012 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                         <body name="middle_link_3" pos="0.025 0 0">
                             <joint name="middle_joint_2" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 1.3"/>
                             <geom type="sphere" pos="0.025 0.006 0" size="0.0075" rgba="1 1 1 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <geom type="mesh" rgba="1 1 1 1" mesh="middle_link_3" class="visual"/>
+                            <site name="middle_t1_3" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                            <site name="middle_t2_3" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                             <geom name="middle_link_3_collision_box" type="box" pos="0.012 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <site name="middle_fingertip" pos="0.025 0.01 0" size="0.001" rgba="1 0 0 1"/>
                         </body>
@@ -130,18 +158,30 @@
             <body name="ring_base_link" pos="0.015 0.01 0.005" euler="1.57 0.0 0.0">
                 <joint name="ring_swing" axis="0 1 0" range="0 0.5" damping="0.2"/>
                 <geom type="sphere" size=".002"/>
+                <site name="ring_t12" pos="0 0 0" size="0.001" rgba="0 0 0.9 1"/>
+                <site name="ring_t0" pos="-0.01 0 0" size="0.001" rgba="0 0 0.9 1"/>
                 <body name="ring_link_1" pos="0.015 0 0">
                     <joint name="ring_joint_0" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 3.14"/>
                     <geom type="mesh" rgba="1 1 1 1" mesh="ring_link_1" class="visual"/>
                     <geom name="ring_link_1_collision_box" type="box" pos="0.02 0.005 0" size="0.014 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
+                    <site name="ring_t1_1_1" pos="0.008 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="ring_t2_1_1" pos="0.008 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="ring_t1_1_2" pos="0.032 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="ring_t2_1_2" pos="0.032 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                     <body name="ring_link_2" pos="0.04 0 0">
                         <joint name="ring_joint_1" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 3.14"/>
                         <geom type="mesh" rgba="1 1 1 1" mesh="ring_link_2" class="visual"/>
                         <geom name="ring_link_2_collision_box" type="box" pos="0.012 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
+                        <site name="ring_t1_2_1" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="ring_t2_2_1" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="ring_t1_2_2" pos="0.019000000000000003 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="ring_t2_2_2" pos="0.019000000000000003 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                         <body name="ring_link_3" pos="0.025 0 0">
                             <joint name="ring_joint_2" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 1.3"/>
                             <geom type="sphere" pos="0.025 0.006 0" size="0.0075" rgba="1 1 1 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <geom type="mesh" rgba="1 1 1 1" mesh="ring_link_3" class="visual"/>
+                            <site name="ring_t1_3" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                            <site name="ring_t2_3" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                             <geom name="ring_link_3_collision_box" type="box" pos="0.012 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
                             <site name="ring_fingertip" pos="0.025 0.01 0" size="0.001" rgba="1 0 0 1"/>
                         </body>
@@ -151,24 +191,24 @@
             <body name="little_base_link" pos="0.005 0.03 0.005" euler="1.57 0.0 0.0">
                 <joint name="little_swing" axis="0 1 0" range="0 0.75" damping="0.2"/>
                 <geom type="sphere" size=".002"/>
-                <!-- <site name="little_t12" pos="0 0 0" size="0.001" rgba="0 0 0.9 1"/>
-                <site name="little_t0" pos="-0.01 0 0" size="0.001" rgba="0 0 0.9 1"/> -->
+                <site name="little_t12" pos="0 0 0" size="0.001" rgba="0 0 0.9 1"/>
+                <site name="little_t0" pos="-0.01 0 0" size="0.001" rgba="0 0 0.9 1"/>
                 <body name="little_link_1" pos="0.015 0 0">
                     <joint name="little_joint_0" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 3.14"/>
                     <geom type="mesh" rgba="1 1 1 1" mesh="little_link_1" class="visual"/>
                     <geom name="little_link_1_collision_box" type="box" pos="0.02 0.005 0" size="0.014 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
-                    <!-- <site name="little_t1_1_1" pos="0.008 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                    <site name="little_t1_1_1" pos="0.008 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
                     <site name="little_t2_1_1" pos="0.008 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                     <site name="little_t1_1_2" pos="0.032 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
-                    <site name="little_t2_1_2" pos="0.032 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/> -->
+                    <site name="little_t2_1_2" pos="0.032 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                     <body name="little_link_2" pos="0.04 0 0">
                         <joint name="little_joint_1" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 3.14"/>
                         <geom type="mesh" rgba="1 1 1 1" mesh="little_link_2" class="visual"/>
                         <geom name="little_link_2_collision_box" type="box" pos="0.012 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
-                        <!-- <site name="little_t1_2_1" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                        <site name="little_t1_2_1" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
                         <site name="little_t2_2_1" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                         <site name="little_t1_2_2" pos="0.019000000000000003 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
-                        <site name="little_t2_2_2" pos="0.019000000000000003 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/> -->
+                        <site name="little_t2_2_2" pos="0.019000000000000003 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                         <body name="little_link_3" pos="0.025 0 0">
                             <joint name="little_joint_2" pos="0 0 0" axis="0 0 1" stiffness="0.1" springref="0.0" damping="0.2" range="0 1.3"/>
                             <geom type="sphere" pos="0.025 0.006 0" size="0.0075" rgba="1 1 1 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
@@ -176,8 +216,8 @@
                             <!-- <geom type="capsule" euler="0 1.57 0" pos="0.02 0.006 0" size="0.0075 0.005000000000000001" rgba="1 1 1 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/> -->
                             <geom type="mesh" rgba="1 1 1 1" mesh="little_link_3" class="visual"/>
                             <geom name="little_link_3_collision_box" type="box" pos="0.012 0.005 0" size="0.008 0.005 0.008" rgba="1 1 .6 .3" density="200" friction="0.7 0.05 0.0002" solref="0.02 1.5" solimp="0.9 0.99 0.001"/>
-                            <!-- <site name="little_t1_3" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
-                            <site name="little_t2_3" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/> -->
+                            <site name="little_t1_3" pos="0.006 0.008 0.004" size="0.001" rgba="0 0 0.9 1"/>
+                            <site name="little_t2_3" pos="0.006 0.008 -0.004" size="0.001" rgba="0 0 0.9 1"/>
                             <!-- <body name="little_fingertip" pos="0.02 0.01 0" euler="1.57 0 0">
                                 <geom type="sphere" pos="0 0 0" size=".001" rgba=".9 0 0 .1"/>
                             </body> -->
@@ -189,31 +229,97 @@
         <!-- cube 的定义 -->
         <body name="cube" pos="-0.01 0.0 0.2" quat="1 0 0 0" childclass="cube">
             <freejoint name="cube_freejoint"/>
-            <geom name="cube" type="box" size=".024 .024 .024" mass=".108" group="0" rgba="0 1 0 1"/>
+            <geom name="cube" type="box" size=".026 .026 .026" mass=".108" group="0" rgba="0 1 0 1"/>
             <site name="cube_center" pos="0 0 0" group="4"/>
         </body>
     </worldbody>
+    <tendon>
+        <spatial name="index_tendon" width=".0005" rgba="0 0 .9 1" solreflimit=".001 1" solimplimit="0.99 0.999 0.00001 0.1 2">
+            <site site="index_t0"/>
+            <site site="index_t12"/>
+            <pulley divisor="2"/>
+            <site site="index_t12"/>
+            <site site="index_t1_1_1"/>
+            <site site="index_t1_1_2"/>
+            <site site="index_t1_2_1"/>
+            <site site="index_t1_2_2"/>
+            <site site="index_t1_3"/>
+            <pulley divisor="2"/>
+            <site site="index_t12"/>
+            <site site="index_t2_1_1"/>
+            <site site="index_t2_1_2"/>
+            <site site="index_t2_2_1"/>
+            <site site="index_t2_2_2"/>
+            <site site="index_t2_3"/>
+        </spatial>
+        <spatial name="middle_tendon" width=".0005" rgba="0 0 .9 1" solreflimit=".001 1" solimplimit="0.99 0.999 0.00001 0.1 2">
+            <site site="middle_t0"/>
+            <site site="middle_t12"/>
+            <pulley divisor="2"/>
+            <site site="middle_t12"/>
+            <site site="middle_t1_1_1"/>
+            <site site="middle_t1_1_2"/>
+            <site site="middle_t1_2_1"/>
+            <site site="middle_t1_2_2"/>
+            <site site="middle_t1_3"/>
+            <pulley divisor="2"/>
+            <site site="middle_t12"/>
+            <site site="middle_t2_1_1"/>
+            <site site="middle_t2_1_2"/>
+            <site site="middle_t2_2_1"/>
+            <site site="middle_t2_2_2"/>
+            <site site="middle_t2_3"/>
+        </spatial>
+        <spatial name="ring_tendon" width=".0005" rgba="0 0 .9 1" solreflimit=".001 1" solimplimit="0.99 0.999 0.00001 0.1 2">
+            <site site="ring_t0"/>
+            <site site="ring_t12"/>
+            <pulley divisor="2"/>
+            <site site="ring_t12"/>
+            <site site="ring_t1_1_1"/>
+            <site site="ring_t1_1_2"/>
+            <site site="ring_t1_2_1"/>
+            <site site="ring_t1_2_2"/>
+            <site site="ring_t1_3"/>
+            <pulley divisor="2"/>
+            <site site="ring_t12"/>
+            <site site="ring_t2_1_1"/>
+            <site site="ring_t2_1_2"/>
+            <site site="ring_t2_2_1"/>
+            <site site="ring_t2_2_2"/>
+            <site site="ring_t2_3"/>
+        </spatial>
+        <spatial name="little_tendon" width=".0005" rgba="0 0 .9 1" solreflimit=".001 1" solimplimit="0.99 0.999 0.00001 0.1 2">
+            <site site="little_t0"/>
+            <site site="little_t12"/>
+            <pulley divisor="2"/>
+            <site site="little_t12"/>
+            <site site="little_t1_1_1"/>
+            <site site="little_t1_1_2"/>
+            <site site="little_t1_2_1"/>
+            <site site="little_t1_2_2"/>
+            <site site="little_t1_3"/>
+            <pulley divisor="2"/>
+            <site site="little_t12"/>
+            <site site="little_t2_1_1"/>
+            <site site="little_t2_1_2"/>
+            <site site="little_t2_2_1"/>
+            <site site="little_t2_2_2"/>
+            <site site="little_t2_3"/>
+        </spatial>
+    </tendon>
     <actuator>
-        <!-- 魔法电机直接驱动关节 -->
-        <position name="thumb_joint_0" joint="thumb_joint_0" ctrllimited="true" ctrlrange="-1.57 3.14" kp="3"/>
-        <position name="thumb_joint_1" joint="thumb_joint_1" ctrllimited="true" ctrlrange="-1.57 1.57" kp="3"/>
-        <position name="thumb_joint_2" joint="thumb_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
-        <position name="thumb_joint_3" joint="thumb_joint_3" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="index_joint_0" joint="index_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="index_joint_1" joint="index_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="index_joint_2" joint="index_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
-        <position name="middle_joint_0" joint="middle_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="middle_joint_1" joint="middle_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="middle_joint_2" joint="middle_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
-        <position name="ring_joint_0" joint="ring_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="ring_joint_1" joint="ring_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="ring_joint_2" joint="ring_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
-        <position name="little_joint_0" joint="little_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="little_joint_1" joint="little_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="3"/>
-        <position name="little_joint_2" joint="little_joint_2" ctrllimited="true" ctrlrange="0 1.3" kp="3"/>
-        <position name="index_swing" joint="index_swing" ctrllimited="true" ctrlrange="0 0.5" kp="3" dampratio="2"/>
-        <position name="little_swing" joint="little_swing" ctrllimited="true" ctrlrange="0 0.75" kp="3" dampratio="2"/>
-        <position name="ring_swing" joint="ring_swing" ctrllimited="true" ctrlrange="0 0.5" kp="3" dampratio="2"/>
+        <position name="thumb_joint_0" joint="thumb_joint_0" ctrllimited="true" ctrlrange="-1.57 1.57" kp="10"/>
+        <position name="thumb_joint_1" joint="thumb_joint_1" ctrllimited="true" ctrlrange="0 1.57" kp="10"/>
+        <position name="thumb_joint_2" joint="thumb_joint_2" ctrllimited="true" ctrlrange="0 1.57" kp="10"/>
+        <position name="thumb_joint_3" joint="thumb_joint_3" ctrllimited="true" ctrlrange="0 1.57" kp="10"/>
+        <motor name="index_tendon" tendon="index_tendon" ctrllimited="true" ctrlrange="-20 0"/>
+        <motor name="middle_tendon" tendon="middle_tendon" ctrllimited="true" ctrlrange="-20 0"/>
+        <motor name="ring_tendon" tendon="ring_tendon" ctrllimited="true" ctrlrange="-20 0"/>
+        <motor name="little_tendon" tendon="little_tendon" ctrllimited="true" ctrlrange="-20 0"/>
+        <position name="index_swing" joint="index_swing" ctrllimited="true" ctrlrange="0 0.523" kp="10"/>
+        <position name="middle_swing" joint="middle_swing" ctrllimited="true" ctrlrange="-0.261 0.261" kp="10"/>
+        <position name="ring_swing" joint="ring_swing" ctrllimited="true" ctrlrange="-0.261 0.261" kp="10"/>
+        <position name="little_swing" joint="little_swing" ctrllimited="true" ctrlrange="0 0.523" kp="10"/>
         <!-- <position name="palm_slide_x" joint="palm_slide_x" ctrllimited="true" ctrlrange="-.1 .1" kp="3" dampratio="1.5"/>
         <position name="palm_slide_y" joint="palm_slide_y" ctrllimited="true" ctrlrange="-.1 .1" kp="3" dampratio="1.5"/>
         <position name="palm_slide_z" joint="palm_slide_z" ctrllimited="true" ctrlrange="-.2 .1" kp="3" dampratio="1.5"/>

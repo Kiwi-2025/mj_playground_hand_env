@@ -20,9 +20,6 @@ from para_env.para_hand_base import ParaHandEnv as BaseEnv
 def default_config() -> config_dict.ConfigDict:
   """config for ParaHandRotateZ environment. Check existing config for details."""
   return config_dict.create(
-    #   ctrl_dt=0.02,
-    #   sim_dt=0.001,
-    #   action_repeat=20,
       action_scale=0.5,
       ctrl_dt=0.025,
       sim_dt=0.005,
@@ -122,13 +119,12 @@ class ParaHandRotateZ(BaseEnv):
         # Randomizes hand pos
         rng, pos_rng, vel_rng = jax.random.split(rng, 3)
         
-        q_hand = self._default_pose
-        # q_hand = jp.zeros(consts.NQ_POS)
-        # q_hand = jp.clip(
-        #     self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ_POS,)),
-        #     self._lowers,
-        #     self._uppers,
-        # )
+        # q_hand = self._default_pose
+        q_hand = jp.clip(
+            self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ_POS,)),
+            self._lowers,
+            self._uppers,
+        )
         # jax.debug.print("q_hand shape:{}", q_hand.shape)
         
         v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
@@ -138,8 +134,8 @@ class ParaHandRotateZ(BaseEnv):
         
         # Randomizes cube qpos and qvel
         rng, p_rng, quat_rng = jax.random.split(rng, 3)
-        start_pos = jp.array([0.0, 0.0, 0.23])
-        # start_pos = jp.array([0.0, 0.0, 0.23]) + jax.random.uniform(
+        start_pos = jp.array([0.0, 0.0, 0.2])
+        # start_pos = jp.array([0.0, 0.0, 0.2]) + jax.random.uniform(
         #     p_rng, (3,), minval=-0.01, maxval=0.01
         # )
         # start_quat = para_hand_base.uniform_quat(quat_rng)
@@ -185,11 +181,10 @@ class ParaHandRotateZ(BaseEnv):
         for k in self._config.reward_config.scales.keys():
             metrics[f"reward/{k}"] = jp.zeros(())
         metrics["reward/total"] = jp.zeros(())
-
-        # obs_history = jp.zeros(self._config.history_len*43)    
-        obs_history = jp.zeros(self._config.history_len*38) # 直接驱动电机 19关节 + 19电机驱动=38
-        # TODO：43 = state size (25 joint pos + 18 last act) 注意修改这个尺寸
-        # obs_history = jp.zeros(self._config.history_len*34)
+    
+        # TODO: change obs history size accordingly
+        # obs_history = jp.zeros(self._config.history_len * 37) # 37 = state size (25 joint pos + 12 last act)
+        obs_history = jp.zeros(self._config.history_len * 49) # 49 = state size (25 joint pos + 12 last act + 12 last last act)
         obs = self._get_obs(data, info, obs_history)
         reward, done = jp.zeros(2)
 
@@ -249,10 +244,11 @@ class ParaHandRotateZ(BaseEnv):
         ) # add some noise to joint positions
 
         # 策略网络所能够观察到的状态
-        # TODO: 我认为触觉信息也应该解包后放在这里
+        # TODO: 这里需要更改obs_history的尺寸
         state = jp.concatenate([
             noisy_joint_qpos, # 25个关节位置
-            info["last_act"], # 18个动作(执行器数量)
+            info["last_act"], # 12个动作(执行器数量)
+            info["last_last_act"], # 12个动作(执行器数量)
         ])
         obs_history = jp.roll(obs_history, state.size)
         obs_history = obs_history.at[: state.size].set(state)

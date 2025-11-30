@@ -11,3 +11,5 @@
 !/logs/
 
 __pycache__/
+
+MUJOCO_LOG.TXT
