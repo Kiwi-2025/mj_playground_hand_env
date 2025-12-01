@@ -263,7 +263,10 @@ def main(argv):
   print(f"Experiment name: {exp_name}")
 
   # Set up logging directory
-  logdir = epath.Path("logs").resolve() / exp_name
+  if _PLAY_ONLY.value:
+    logdir = epath.Path("logs/playonly").resolve() / exp_name
+  else:
+    logdir = epath.Path("logs").resolve() / exp_name
   logdir.mkdir(parents=True, exist_ok=True)
   print(f"Logs are being stored in: {logdir}")
 
@@ -282,7 +285,11 @@ def main(argv):
   if _LOAD_CHECKPOINT_PATH.value is not None:
     # Convert to absolute path
     ckpt_path = epath.Path(_LOAD_CHECKPOINT_PATH.value).resolve()
-    if ckpt_path.is_dir():
+    if ckpt_path.is_dir() and ckpt_path.name.isdigit():
+      restore_checkpoint_path = ckpt_path
+      print(f"Restoring from: {restore_checkpoint_path}")
+    
+    elif ckpt_path.is_dir():
       latest_ckpts = list(ckpt_path.glob("*"))
       latest_ckpts = [ckpt for ckpt in latest_ckpts if ckpt.is_dir()]
       latest_ckpts.sort(key=lambda x: int(x.name))
@@ -500,10 +507,11 @@ def main(argv):
   camera.type = mujoco.mjtCamera.mjCAMERA_TRACKING
   camera.trackbodyid = env.mj_model.body("palm").id  # 跟踪手掌
   camera.distance = 0.4           # 缩短摄像机距离
-  # camera.azimuth = 150           # 调整方位角以获得更好的视角
+  # camera.azimuth = 180           # 调整方位角以获得更好的视角
   # camera.elevation = -20          # 从略微向下的角度观察
 
-
+  # 获取一个新的时间戳防止覆盖
+  timestamp =datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
   for i, rollout in enumerate(trajectories):
     traj = rollout[::render_every]
     frames = eval_env.render(
@@ -511,8 +519,8 @@ def main(argv):
         camera=camera,
         scene_option=scene_option
     )
-    media.write_video(f"./video/rollout{i}.mp4", frames, fps=fps)
-    print(f"Rollout video saved as './video/rollout{i}.mp4'.")
+    media.write_video(f"./video/temp/rollout{i}_{timestamp}.mp4", frames, fps=fps)
+    print(f"Rollout video saved as './video/rollout{i}_{timestamp}.mp4'.")
 
 
 if __name__ == "__main__":

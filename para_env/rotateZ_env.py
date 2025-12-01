@@ -119,12 +119,12 @@ class ParaHandRotateZ(BaseEnv):
         # Randomizes hand pos
         rng, pos_rng, vel_rng = jax.random.split(rng, 3)
         
-        # q_hand = self._default_pose
-        q_hand = jp.clip(
-            self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ_POS,)),
-            self._lowers,
-            self._uppers,
-        )
+        q_hand = self._default_pose
+        # q_hand = jp.clip(
+        #     self._default_pose + 0.1 * jax.random.normal(pos_rng, (consts.NQ_POS,)),
+        #     self._lowers,
+        #     self._uppers,
+        # )
         # jax.debug.print("q_hand shape:{}", q_hand.shape)
         
         v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
@@ -141,9 +141,6 @@ class ParaHandRotateZ(BaseEnv):
         # start_quat = para_hand_base.uniform_quat(quat_rng)
         start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
         
-        # 固定初始位置和姿态进行测试
-        # start_pos = jp.array([0.0, 0.0, 0.21])
-        # start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
         q_cube = jp.array([*start_pos, *start_quat])
         v_cube = jp.zeros(6)
         
@@ -183,8 +180,8 @@ class ParaHandRotateZ(BaseEnv):
         metrics["reward/total"] = jp.zeros(())
     
         # TODO: change obs history size accordingly
-        # obs_history = jp.zeros(self._config.history_len * 37) # 37 = state size (25 joint pos + 12 last act)
-        obs_history = jp.zeros(self._config.history_len * 49) # 49 = state size (25 joint pos + 12 last act + 12 last last act)
+        obs_history = jp.zeros(self._config.history_len * 37) # 37 = state size (25 joint pos + 12 last act)
+        # obs_history = jp.zeros(self._config.history_len * 49) # 49 = state size (25 joint pos + 12 last act + 12 last last act)
         obs = self._get_obs(data, info, obs_history)
         reward, done = jp.zeros(2)
 
@@ -206,19 +203,21 @@ class ParaHandRotateZ(BaseEnv):
         done = self._get_termination(data)
 
         # get rewards
-        rewards = self._get_reward(data, action, state.info, state.metrics, done)
-        reward = {
-            k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
+        raw_rewards = self._get_reward(data, action, state.info, state.metrics, done)
+        scaled_rewards = {
+            k: v * self._config.reward_config.scales[k] for k, v in raw_rewards.items()
         } # scale rewards with config scales constatnts
         
         # update metrics
         state.info["last_last_act"] = state.info["last_act"]
         state.info["last_act"] = action
         state.info["last_cube_angvel"] = self.get_cube_angvel(data)
-        for k, v in reward.items():
+        for k, v in scaled_rewards.items():
             state.metrics[f"reward/{k}"] = v
 
-        reward = sum(rewards.values()) * self.dt
+        reward = sum(scaled_rewards.values()) * self.dt
+        # reward = sum(scaled_rewards.values())
+
         done = done.astype(reward.dtype)
         state = state.replace(data=data, obs=obs, reward=reward, done=done)
         return state
@@ -248,7 +247,7 @@ class ParaHandRotateZ(BaseEnv):
         state = jp.concatenate([
             noisy_joint_qpos, # 25个关节位置
             info["last_act"], # 12个动作(执行器数量)
-            info["last_last_act"], # 12个动作(执行器数量)
+            # info["last_last_act"], # 12个动作(执行器数量)
         ])
         obs_history = jp.roll(obs_history, state.size)
         obs_history = obs_history.at[: state.size].set(state)
