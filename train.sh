@@ -1,3 +1,3 @@
 python train.py \
-  --env_name=ParaHandRotateZ \
+  --env_name=ParaHandGrasp \
   --use_tb

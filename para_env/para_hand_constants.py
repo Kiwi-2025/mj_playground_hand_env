@@ -7,7 +7,8 @@ PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感
 TASK_XML_FILES = {
     "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand.xml",
     "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_tendon_pro.xml",
-    "grasp": ROOT_PATH / "xmls" / "grasp" / "grasp_hand_pro_tac.xml",
+    # "grasp": ROOT_PATH / "xmls" / "grasp" / "grasp_hand_pro_tac.xml",
+    "grasp": ROOT_PATH / "xmls" / "grasp" / "hand_16dof_grasp.xml",
 }
 
 # TODO: 确认自由度数量
@@ -22,7 +23,7 @@ TASK_XML_FILES = {
 NQ_POS = 26
 NQ_VEL = 25
 NV = 26
-NU = 18
+NU = 22
 NT_FORCE=5
 
 TACTILE_GEOM_NAMES = [

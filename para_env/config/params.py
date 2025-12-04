@@ -44,21 +44,26 @@ def brax_ppo_config(
             discounting=0.99,
             max_devices_per_host=8,
         )
+
     elif env_name == "ParaHandGrasp":
-        rl_config.update(
-            num_resets_per_eval=1,
-            num_timesteps=100_000_000,
-            num_evals=10,
-            num_envs=16,
-            batch_size=64,
-            num_minibatches=16,
-            num_updates_per_batch=4,
-            learning_rate=2e-4,
-            entropy_cost=5e-3,
-            discounting=0.95,
-            unroll_length=10,
-            max_devices_per_host=8,
+        rl_config.num_timesteps = 100_000_000
+        rl_config.num_evals = 10
+        rl_config.num_minibatches = 32
+        rl_config.unroll_length = 40
+        rl_config.num_updates_per_batch = 4
+        rl_config.discounting = 0.97
+        rl_config.learning_rate = 3e-4
+        rl_config.entropy_cost = 1e-2
+        rl_config.num_envs = 8192
+        rl_config.batch_size = 256
+        rl_config.num_resets_per_eval = 1
+        rl_config.network_factory = config_dict.create(
+            policy_hidden_layer_sizes=(512, 256, 128),
+            value_hidden_layer_sizes=(512, 256, 128),
+            policy_obs_key="state",
+            value_obs_key="privileged_state",
         )
+        
     elif env_name == "ParaHandRotateZ":
         rl_config.num_timesteps = 100_000_000
         rl_config.num_evals = 10
@@ -80,5 +85,4 @@ def brax_ppo_config(
     
     else:
         raise ValueError(f"No RL config found for environment: {env_name}")
-  
     return rl_config

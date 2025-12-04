@@ -16,7 +16,7 @@ def get_assets() -> Dict[str, bytes]:
   mjx_env.update_assets(assets, path / "assets")
   mjx_env.update_assets(assets, path / "xmls", "*.xml")
   mjx_env.update_assets(assets, path / "xmls" / "objs", "*.obj")
-  # mjx_env.update_assets(assets, consts.ROOT_PATH / "xmls" / "meshes")
+  mjx_env.update_assets(assets, path / "xmls" / "meshes", "*.STL")
   return assets
 
 def uniform_quat(rng: jax.Array) -> jax.Array:
