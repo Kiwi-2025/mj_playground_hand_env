@@ -7,17 +7,23 @@ PARA_HAND_XML = ROOT_PATH / "xmls" / "sphere_tac_5x5.xml"   # 球状触觉传感
 TASK_XML_FILES = {
     "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand.xml",
     "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_tendon_pro.xml",
-    # "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_sim_pro.xml",
-    # "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_obj_notendon.xml",
-    "grasp": ROOT_PATH / "xmls" / "grasp" / "grasp_hand.xml",
+    "grasp": ROOT_PATH / "xmls" / "grasp" / "grasp_hand_pro_tac.xml",
 }
 
 # TODO: 确认自由度数量
-NQ_POS = 20     # Number of Positions, 机器人系统的位置自由度数量
-NQ_VEL = 19     # Number of Velocities, 机器人系统的速度自由度数量
-NV = 20         # Number of Velocities, 机器人系统的速度自由度数量，表示机器人有16个关节
-NU = 12         # Number of Actuators, 机器人系统的执行器数量，表示机器人有16个执行器，在这里是说有16个motors
-NT_FORCE=5      # Number of Tactile Forces, 触觉传感器的数量，这里表示有5个触觉传感器，分别对应5根手指
+# rotateZ 参数配置
+# NQ_POS = 20     
+# NQ_VEL = 19     
+# NV = 20         
+# NU = 12         
+# NT_FORCE=5      
+
+# grasp 参数配置
+NQ_POS = 26
+NQ_VEL = 25
+NV = 26
+NU = 18
+NT_FORCE=5
 
 TACTILE_GEOM_NAMES = [
     f"{finger}_markerG_{i}_{j}"
@@ -80,13 +86,13 @@ JOINT_NAMES = [
     "little_joint_1",
     "little_joint_2",
     "little_swing",
-    # palm
-    # "palm_rotate_x",
-    # "palm_rotate_y",
-    # "palm_rotate_z",
-    # "palm_slide_x",
-    # "palm_slide_y",
-    # "palm_slide_z",
+    # palm,rotateZ 没有腕部关节, grasp 有腕部关节
+    "palm_rotate_x",
+    "palm_rotate_y",
+    "palm_rotate_z",
+    "palm_slide_x",
+    "palm_slide_y",
+    "palm_slide_z",
 ]
     
 # change these actuator names to fit xml file

@@ -19,11 +19,13 @@ from para_env.para_hand_base import ParaHandEnv
 
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
-      ctrl_dt=0.02,
-      sim_dt=0.002,
-      action_scale=1.0,
-      action_repeat=1,
-      episode_length=1000,
+      action_scale=0.5,
+      ctrl_dt=0.025,
+      sim_dt=0.005,
+      action_repeat=5,
+      ema_alpha=1.0,
+      episode_length=500,
+      success_threshold=0.1,
       history_len=1,
       reward_config=config_dict.create(
           scales=config_dict.create(
@@ -41,8 +43,8 @@ def default_config() -> config_dict.ConfigDict:
           success_reward=1000.0,
       ),
       impl='jax',
-      nconmax=128,  # 可能的接触对数量
-      njmax=512,    # 可能的约束数量
+      nconmax=30*8192,
+      njmax=64,
   )
 
 class ParaHandGrasp(ParaHandEnv):
@@ -65,41 +67,44 @@ class ParaHandGrasp(ParaHandEnv):
         # get ids for relevant joints and geoms
         self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.JOINT_NAMES)
         self._hand_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.JOINT_NAMES)
-        # self._obj_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
-        self.target_id = self._mj_model.site("target").id
-        # self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
-        # self._floor_geom_id = self._mj_model.geom("floor").id
-        # self._cube_geom_id = self._mj_model.geom("cube").id
-        # debug info
-        # print("hand qpos ids num:", self._hand_qids.shape)
-        # print("hand qvel ids num:", self._hand_dqids.shape) 
+        self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
+        self._floor_geom_id = self._mj_model.geom("floor").id
+        self._cube_geom_id = self._mj_model.geom("cube").id
 
-        # self._target_sid=mjx_env.get_site_ids(self.mj_model, ["target"])
+        # debug info
+        # jax.debug.print("hand qpos ids num: {}", self._hand_qids.shape)
+        # jax.debug.print("hand qvel ids num: {}", self._hand_dqids.shape) 
+
+        self._target_sid = self._mj_model.site("target").id
         self._palm_bid = self._mj_model.body("palm").id
-        self._tips_bids = [self._mj_model.body(tip).id for tip in [
-            "thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"
-        ]]
-        # inner and outer site ids, 用于引导抓取
+        self._tips_bids = jp.array([self._mj_model.body(tip).id for tip in [
+             "thumb_fingertip", "index_fingertip", "middle_fingertip", "ring_fingertip", "little_fingertip"
+        ]])
         self._inner_sids = jp.array([self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES])
         self._outer_sids = jp.array([self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES])
-        
-        # get ids for tactile geoms
-        self._tactile_geom_ids = [self._mj_model.geom(name).id for name in consts.TACTILE_GEOM_NAMES]
-        self._tactile_geom_body_ids = [self._mj_model.body(name).id for name in consts.TACTILE_BODY_NAMES]
+
+        self._tactile_geom_ids = jp.array([self._mj_model.geom(name).id for name in consts.TACTILE_GEOM_NAMES])
+        self._tactile_geom_body_ids = jp.array([self._mj_model.body(name).id for name in consts.TACTILE_BODY_NAMES])
         
         # Initialize default pose and limits
         home_key = self._mj_model.keyframe("home")
         self._init_q = jp.array(home_key.qpos)
         self._init_q_vel = jp.array(home_key.qvel)
-
         self._default_pose = self._init_q[self._hand_qids]
-        self._default_hand_vel = self._init_q_vel[self._hand_qids]
-        self._lowers, self._uppers = self.mj_model.actuator_ctrlrange.T
+        self._default_ctrl = jp.array(home_key.ctrl)
+        
+        hand_joint_ids = jp.array([self._mj_model.joint(name).id for name in consts.JOINT_NAMES])
+        hand_joint_ranges =self._mj_model.jnt_range[hand_joint_ids]
+        self._lowers, self._uppers = hand_joint_ranges.T
         
         # DEBUG: print initial positions
-        # jax.debug.print("init qpos: {}", self._init_q)
-        # jax.debug.print("hand qid: {}", self._hand_qids)
-        # jax.debug.print("hand dqid: {}", self._hand_dqids)
+        # jax.debug.print("init qpos shape: {}", self._init_q.shape)
+        # jax.debug.print("hand qid  shape: {}", self._hand_qids.shape)
+        # jax.debug.print("hand dqid shape: {}", self._hand_dqids.shape)
+        # jax.debug.print("default pose shape: {}", self._default_pose.shape)
+        # jax.debug.print("default ctrl shape: {}", self._default_ctrl.shape)
+        # jax.debug.print("actuator lowers shape: {}", self._lowers.shape)
+        # jax.debug.print("actuator uppers shape: {}", self._uppers.shape)
 
 
     def reset(self, rng: jax.Array) -> mjx_env.State:
@@ -113,8 +118,7 @@ class ParaHandGrasp(ParaHandEnv):
         #     self._uppers,
         # )
         
-        v_hand = self._default_hand_vel
-
+        v_hand = 0.0 * jax.random.normal(vel_rng, (consts.NV,))
         # DEBUG: print randomized hand states shape
         # jax.debug.print("q_hand shape:{}", q_hand.shape)
         # jax.debug.print("v_hand shape:{}", v_hand.shape)
@@ -127,28 +131,24 @@ class ParaHandGrasp(ParaHandEnv):
         # start_quat = para_hand_base.uniform_quat(quat_rng)
         
         # 固定初始位置和姿态进行测试
-        start_pos = jp.array([0.0, 0.0, 0.02]) # 设置为方块半棱长的高度就能放在地面上
+        start_pos = jp.array([0.0, 0.0, 0.32]) # 设置为方块半棱长的高度就能放在地面上
         start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
         q_cube = jp.array([*start_pos, *start_quat])
         v_cube = jp.zeros(6)
         
         ten_len_xy=0.015
-        ctrl = jp.zeros((self.mjx_model.nu,))
+        # ctrl = jp.zeros((self.mjx_model.nu,))
         # ctrl = ctrl.at[1:5].set(ten_len_xy)
         
         # Set initial tendon lengths for thumb joints
         qpos = jp.concatenate([q_hand, q_cube])
         qvel = jp.concatenate([v_hand, v_cube])
 
-        # jax.debug.print("reset qpos :{}", qpos)
-        # jax.debug.print("reset qvel :{}", qvel)
-        # jax.debug.print("reset ctrl :{}", ctrl)
-        
         data = mjx_env.make_data(
             self._mj_model,
             qpos=qpos,
             qvel=qvel,
-            ctrl=ctrl,
+            ctrl=self._default_ctrl,
             impl=self._mjx_model.impl.value,
             nconmax=self._config.nconmax,
             njmax=self._config.njmax,
@@ -156,10 +156,6 @@ class ParaHandGrasp(ParaHandEnv):
         
         info = {
             "rng": rng,
-            "step": 0,
-            "steps_since_last_success": 0,
-            "success_count": 0,
-            "ctrl_full": jp.zeros(self.mjx_model.nu),
             "last_act": jp.zeros(consts.NU),
             "last_last_act": jp.zeros(consts.NU),
         }
@@ -167,44 +163,49 @@ class ParaHandGrasp(ParaHandEnv):
         metrics = {}
         for k in self._config.reward_config.scales.keys():
             metrics[f"reward/{k}"] = jp.zeros(())
-        metrics["reward/total"] = jp.zeros((),dtype=float)
-        # metrics["reward/success"] = jp.zeros((), dtype=float)
-        # metrics["steps_since_last_success"] = 0
-        # metrics["success_count"] = 0
-
-        # obs_history存在循环递归计算的问题，暂时先不使用
-        # obs_history = jp.zeros((self._config.history_len, self.observation_size))
-        obs = self._get_obs(data, info)
+        metrics["reward/total"] = jp.zeros(())
+    
+        # TODO: change obs history size accordingly
+        obs_history = jp.zeros(self._config.history_len * 44) # 44 = state size (26 joint pos + 18 last act)
+        obs = self._get_obs(data, info, obs_history)
         reward, done = jp.zeros(2)
 
         return mjx_env.State(data, obs, reward, done, metrics, info)
 
     def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
-        data = mjx_env.step(model=self.mjx_model,data=state.data,action=action)
-        
-        # get observations and done signal
-        obs = self._get_obs(data, state.info)
-        done = self._get_termination(data)
+            motor_targets = self._default_ctrl + action * self._config.action_scale
+            # debug info
+            # jax.debug.print("step action shape: {}", action.shape)
+            # jax.debug.print("motor targets: {}", motor_targets)
 
-        # get rewards
-        rewards = self._get_reward(data, action, state.info, state.metrics, done)
-        rewards = {
-            k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
-        } # scale rewards with config scales constatnts
-        
-        # update metrics
-        for k, v in rewards.items():
-            state.metrics[f"reward/{k}"] = v
-        # state.metrics["steps_since_last_success"] = state.info["steps_since_last_success"]
-        # state.metrics["success_count"] = state.info["success_count"]
+            data = mjx_env.step(
+                self.mjx_model, state.data, motor_targets, self.n_substeps
+            )
+            state.info["motor_targets"] = motor_targets
+            
+            # get observations and done signal
+            obs = self._get_obs(data, state.info, state.obs["state"])
+            done = self._get_termination(data)
 
-        # update total reward metrics
-        reward = sum(rewards.values()) * self.dt  # total reward
-        state.metrics["reward/total"] = reward
+            # get rewards
+            raw_rewards = self._get_reward(data, action, state.info, state.metrics, done)
+            scaled_rewards = {
+                k: v * self._config.reward_config.scales[k] for k, v in raw_rewards.items()
+            } # scale rewards with config scales constatnts
+            
+            # update metrics
+            state.info["last_last_act"] = state.info["last_act"]
+            state.info["last_act"] = action
+            state.info["last_cube_angvel"] = self.get_cube_angvel(data)
+            for k, v in scaled_rewards.items():
+                state.metrics[f"reward/{k}"] = v
 
-        done = done.astype(reward.dtype)
-        state = state.replace(data=data, obs=obs, reward=reward, done=done)
-        return state
+            reward = sum(scaled_rewards.values()) * self.dt
+            # reward = sum(scaled_rewards.values())
+
+            done = done.astype(reward.dtype)
+            state = state.replace(data=data, obs=obs, reward=reward, done=done)
+            return state
     
 
     def _get_termination(self, data: mjx.Data) -> jax.Array:
@@ -212,25 +213,17 @@ class ParaHandGrasp(ParaHandEnv):
         check whether episode is done, e.g. due to nan values or cube falling below floor
         """
         # check invalid velocities or poses
-        # nans = jp.any(jp.isnan(data.qpos)) | jp.any(jp.isnan(data.qvel))
+        nans = jp.any(jp.isnan(data.qpos)) | jp.any(jp.isnan(data.qvel))
         # check cube falling below floor
-        fall_termination = self.get_obj_position(data)[2] < -0.2
-        return fall_termination
+        # fall_termination = self.get_obj_position(data)[2] < -0.2
+        return nans
 
     def _get_obs(
-        self, data: mjx.Data, info: dict[str, Any]
+        self, data: mjx.Data, info: dict[str, Any], obs_history: jax.Array
     ) -> mjx_env.Observation:
         joint_qpos = data.qpos[self._hand_qids]
         info["rng"], noise_rng = jax.random.split(info["rng"])
-        
-        # TODO： add noise to cube position and orientation
-        # noisy_joint_qpos = (
-        #     joint_qpos
-        #     + (2 * jax.random.uniform(noise_rng, shape=joint_qpos.shape) - 1)
-        #     * self._config.noise_config.level
-        #     * self._config.noise_config.scales.joint_pos
-        # ) # add some noise to joint positions
-
+    
         # 策略网络所能够观察到的状态
         # TODO: 我认为触觉信息也应该解包后放在这里
         state = jp.concatenate([
@@ -239,14 +232,16 @@ class ParaHandGrasp(ParaHandEnv):
             info["last_act"],
             # *self.get_tactile_info(data),
         ])
-        
+        obs_history = jp.roll(obs_history, state.size)
+        obs_history = obs_history.at[: state.size].set(state)
+
         # all these functions should be defined in the base class, and necessary sensors should be added to the xml
-        cube_pos = self.get_obj_position(data)
+        cube_pos = self.get_cube_position(data)
         palm_pos = self.get_palm_position(data)
         cube_pos_error = palm_pos - cube_pos
-        cube_quat = self.get_obj_orientation(data)
-        # cube_angvel = self.get_obj_angvel(data)
-        cube_linvel = self.get_obj_linvel(data)
+        cube_quat = self.get_cube_orientation(data)
+        cube_angvel = self.get_cube_angvel(data)
+        cube_linvel = self.get_cube_linvel(data)
         fingertip_positions = self.get_fingertip_positions(data)
     
         # 供价值网络用于估算价值所需要的完整状态
@@ -257,12 +252,11 @@ class ParaHandGrasp(ParaHandEnv):
             fingertip_positions,
             cube_pos_error,
             cube_quat,
-            # cube_angvel,
+            cube_angvel,
             cube_linvel,
         ])
     
         return {
-            # **self.get_tactile_info(data), # 我觉得触觉信息不应该放在这里
             "privileged_state": privileged_state,
             "state": state,
         }
@@ -285,9 +279,9 @@ class ParaHandGrasp(ParaHandEnv):
         - 抬升高度:当大拇指以及其他至少一根手指上的视触觉传感器检测到接触数据时(此时大概率接近或已经抓住物体),对灵巧手手掌的抬升动作进行奖励,鼓励灵巧手抬升物体
         """
         del done, metrics  # Unused.
-        target_pos= self.get_target_position(data)
-        obj_pos=self.get_obj_position(data)
-        obj_quat=self.get_obj_orientation(data)
+        target_pos = self.get_target_position(data)
+        obj_pos = self.get_cube_position(data)
+        obj_quat = self.get_cube_orientation(data)
         obj_pose = jp.concatenate([obj_pos, obj_quat])
         palm_pos = self.get_palm_position(data)
         obj_dist=jp.linalg.norm(target_pos - obj_pos[:3])
@@ -389,27 +383,30 @@ class ParaHandGrasp(ParaHandEnv):
         ])
 
     # Neccessary getters 
-    def get_obj_position(self, data:mjx.Data) -> jax.Array:
-        """获取待抓取的方块物体位置"""
-        # 不一定是方块所以没有用cube而是用了obj
+    def get_cube_position(self, data:mjx.Data) -> jax.Array:
+        """获取方块的位置表示""" 
         return mjx_env.get_sensor_data(self.mj_model, data, "cube_pos")
 
-    def get_obj_orientation(self, data:mjx.Data) -> jax.Array:
-        """获取待抓取的方块物体四元数表示的位姿"""
+    def get_cube_orientation(self, data:mjx.Data) -> jax.Array:
+        """获取方块的四元数表示"""
         return mjx_env.get_sensor_data(self.mj_model, data, "cube_quat")
-    
-    def get_obj_linvel(self, data:mjx.Data) -> jax.Array:
-        """获取待抓取的方块物体线速度"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "cube_linvel")
 
+    def get_cube_angvel(self, data:mjx.Data) -> jax.Array:
+        """获取方块的角速度表示"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_angvel")
+
+    def get_cube_linvel(self, data:mjx.Data) -> jax.Array:
+        """获取方块的线速度表示"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "cube_linvel")
+    
+    def get_palm_position(self, data:mjx.Data) -> jax.Array:
+        """获取手掌的位置表示"""
+        return mjx_env.get_sensor_data(self.mj_model, data, "palm_pos")
+    
     def get_target_position(self, data:mjx.Data) -> jax.Array:
         """获取目标位置""" 
-        target_pos = data.site_xpos[self.target_id] # 不想写传感器破坏xml了，直接用site位置
+        target_pos = data.site_xpos[self._target_sid]
         return jp.array(target_pos)
-    
-    def get_palm_position(self, data: mjx.Data) -> jax.Array:
-        """获取手掌位置"""
-        return mjx_env.get_sensor_data(self.mj_model, data, "palm_pos")
     
     def get_palm_quat(self, data: mjx.Data) -> jax.Array:
         """获取手掌四元数表示的位姿"""
@@ -797,9 +794,3 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
         })
 
         return model, in_axes
-
-if __name__ == "__main__":
-    env = ParaHandGrasp()
-    rng = jax.random.PRNGKey(0)
-    state = env.reset(rng)
-    print("环境重置成功！")

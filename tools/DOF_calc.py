@@ -40,7 +40,8 @@ if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     # with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/reorient/reorient_hand.xml", "r") as f:
         # xml_file = f.read()
-    with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/rotateZ/rotateZ_hand_tendon_pro.xml", "r") as f:
+    # with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/rotateZ/rotateZ_hand_tendon_pro.xml", "r") as f:
+    with open("/home/rvsa/mj_playground_hand_env/para_env/xmls/grasp/grasp_hand_pro.xml", "r") as f:
         xml_file = f.read()
         
     calculate_dof(xml_file)

@@ -23,8 +23,8 @@ from para_env.rotateZ_env import ParaHandRotateZ
 from mujoco_playground import registry
 
 # env = ParaHandReorient()
-# env = ParaHandGrasp()
-env = ParaHandRotateZ()
+env = ParaHandGrasp()
+# env = ParaHandRotateZ()
 # env = TestTask()
 
 jit_reset = jax.jit(env.reset)
