@@ -32,11 +32,12 @@ jit_step = jax.jit(env.step)
 
 # 设置摄像机参数
 camera = mj.MjvCamera()
-camera.type = mj.mjtCamera.mjCAMERA_TRACKING
-camera.trackbodyid = env.mj_model.body("palm").id  # 跟踪手掌
-camera.distance = 0.8           # 缩短摄像机距离
-camera.azimuth = 60           # 调整方位角以获得更好的视角
-# camera.elevation = -20          # 从略微向下的角度观察
+# camera.type = mj.mjtCamera.mjCAMERA_TRACKING
+# camera.trackbodyid = env.mj_model.body("palm").id  # 跟踪手掌
+camera.distance = 1.8           # 缩短摄像机距离
+camera.azimuth = 120           # 调整方位角以获得更好的视角
+camera.elevation = -30          # 从略微向下的角度观察
+camera.lookat[2] = 0.1          # 调整观察点高度
 
 state = jit_reset(jax.random.PRNGKey(0))
 # ctrl = jp.zeros(env.action_size)

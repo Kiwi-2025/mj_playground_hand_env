@@ -19,7 +19,7 @@ from para_env.para_hand_base import ParaHandEnv
 
 def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
-      action_scale=0.5,
+      action_scale=1.0,
       ctrl_dt=0.025,
       sim_dt=0.005,
       action_repeat=5,
@@ -32,7 +32,7 @@ def default_config() -> config_dict.ConfigDict:
             #   reach_finger=-0.1,
             #   inner_dist=-0.02,
             #   outer_dist=-20,
-              reach_palm=-1.0,
+              reach_palm=-10.0,
             #   lift=0.1,
             #   move_obj=-10,
             #   action_rate=0,
@@ -40,7 +40,7 @@ def default_config() -> config_dict.ConfigDict:
             #   contact_num=0.05,
             #   finger_bend=0.01,
           ),
-          success_reward=1000.0,
+        #   success_reward=1000.0,
       ),
       impl='jax',
       nconmax=30*8192,
@@ -131,7 +131,7 @@ class ParaHandGrasp(ParaHandEnv):
         # start_quat = para_hand_base.uniform_quat(quat_rng)
         
         # 固定初始位置和姿态进行测试
-        start_pos = jp.array([0.0, 0.0, 0.03]) # TODO：确保方块能够放在地上，否则会刷奖励
+        start_pos = jp.array([0.0, 0.0, 0.05]) # TODO：确保方块能够放在地上，否则会刷奖励
         start_quat = jp.array([1.0, 0.0, 0.0, 0.0])
         q_cube = jp.array([*start_pos, *start_quat])
         v_cube = jp.zeros(6)
@@ -159,6 +159,7 @@ class ParaHandGrasp(ParaHandEnv):
             "last_act": jp.zeros(consts.NU),
             "last_last_act": jp.zeros(consts.NU),
             "motor_targets": self._default_ctrl,
+            "dist": jp.zeros(()),
         }
 
         metrics = {}
@@ -167,7 +168,7 @@ class ParaHandGrasp(ParaHandEnv):
         metrics["reward/total"] = jp.zeros(())
     
         # TODO: change obs history size accordingly
-        obs_history = jp.zeros(self._config.history_len * 48) # 44 = state size (26 joint pos + 22 last act)
+        obs_history = jp.zeros(self._config.history_len * 70) # joint_pos = 26
         obs = self._get_obs(data, info, obs_history)
         reward, done = jp.zeros(2)
 
@@ -197,6 +198,7 @@ class ParaHandGrasp(ParaHandEnv):
             # update metrics
             state.info["last_last_act"] = state.info["last_act"]
             state.info["last_act"] = action
+            state.info["dist"] = jp.linalg.norm(self.get_cube_position(data) - self.get_palm_position(data))
             # state.info["last_cube_angvel"] = self.get_cube_angvel(data)
             for k, v in scaled_rewards.items():
                 state.metrics[f"reward/{k}"] = v
@@ -224,17 +226,6 @@ class ParaHandGrasp(ParaHandEnv):
     ) -> mjx_env.Observation:
         joint_qpos = data.qpos[self._hand_qids]
         info["rng"], noise_rng = jax.random.split(info["rng"])
-    
-        # 策略网络所能够观察到的状态
-        # TODO: 我认为触觉信息也应该解包后放在这里
-        state = jp.concatenate([
-            joint_qpos,
-            # noisy_joint_qpos,
-            info["last_act"],
-            # *self.get_tactile_info(data),
-        ])
-        obs_history = jp.roll(obs_history, state.size)
-        obs_history = obs_history.at[: state.size].set(state)
 
         # all these functions should be defined in the base class, and necessary sensors should be added to the xml
         cube_pos = self.get_cube_position(data)
@@ -243,18 +234,35 @@ class ParaHandGrasp(ParaHandEnv):
         cube_quat = self.get_cube_orientation(data)
         cube_angvel = self.get_cube_angvel(data)
         cube_linvel = self.get_cube_linvel(data)
-        fingertip_positions = self.get_fingertip_positions(data)
+        # fingertip_positions = self.get_fingertip_positions(data)
+        fingertip_errors = self.get_fingertip_errors(data, cube_pos)
+
+        # 策略网络所能够观察到的状态，暂时增强
+        # TODO: 我认为触觉信息也应该解包后放在这里
+        state = jp.concatenate([
+            joint_qpos,
+            # noisy_joint_qpos,
+            fingertip_errors,
+            # cube_pos_error,
+            cube_pos,
+            palm_pos,
+            # cube_quat,
+            info["last_act"],
+            # *self.get_tactile_info(data),
+        ])
+        obs_history = jp.roll(obs_history, state.size)
+        obs_history = obs_history.at[: state.size].set(state)
     
         # 供价值网络用于估算价值所需要的完整状态
         privileged_state = jp.concatenate([
             state,
-            joint_qpos,
+            # joint_qpos,
             data.qvel[self._hand_dqids],
-            fingertip_positions,
+            fingertip_errors,
             cube_pos_error,
             cube_quat,
-            cube_angvel,
-            cube_linvel,
+            # cube_angvel,
+            # cube_linvel,
         ])
     
         return {
@@ -285,27 +293,30 @@ class ParaHandGrasp(ParaHandEnv):
         obj_quat = self.get_cube_orientation(data)
         obj_pose = jp.concatenate([obj_pos, obj_quat])
         palm_pos = self.get_palm_position(data)
-        obj_dist=jp.linalg.norm(target_pos - obj_pos[:3])
+        obj_dist = jp.linalg.norm(target_pos - obj_pos[:3])
 
-        # tip靠近cube产生的奖励
+        ## tip靠近cube产生的奖励
         # tips_pos = self.get_tips_positions(data)
         # tips_dist = self.get_cube_sdf(obj_pose, tips_pos)
         # weight = jp.array([10.0,0.0,0.0,0.0,0.0])
+        # weight = jp.array([10.0, 6.0, 6.0, 6.0, 6.0])
         # reward_tips_dist = jp.sum(tips_dist * weight)
         
-        # 内外侧site距离靠近产生的奖励
+        ## 内外侧site距离靠近产生的奖励
         # inner_dist=self.get_cube_sdf(obj_pose, self.get_inner_sites_positions(data))
         # outer_dist=self.get_cube_sdf(obj_pose, self.get_outer_sites_positions(data))
         # reward_inner_dist = jp.sum(jp.maximum(inner_dist[:15], -0.0001))*10 + jp.sum(jp.maximum(inner_dist[15:-4], -0.0001)) + jp.sum(jp.maximum(inner_dist[-4:], 0.01))*20
         # reward_outer_dist = jp.sum(jp.maximum(0, inner_dist - outer_dist))
 
-        # 手掌靠近cube产生的奖励
-        reward_reach_palm = jp.linalg.norm(palm_pos - obj_pos[:3])
-        
-        # 物体移动奖励
+        ## 手掌靠近cube产生的奖励
+        palm_dist = jp.linalg.norm(palm_pos - obj_pos)
+        reward_reach_palm = reward.tolerance(palm_dist, bounds=(0.35 , 0.6), margin=0.35, sigmoid='linear')
+        # jax.debug.print("obj_pos:{}, palm_pos:{}, palm_dist: {}", obj_pos, palm_pos, palm_dist)
+
+        ## 物体移动奖励
         # reward_move = obj_dist
 
-        # 接触奖励
+        ## 接触奖励
         # terminated = self._get_termination(data)
         # contact_num的要重写一下
         # tactile_info = self.get_tactile_info(data)
@@ -319,29 +330,24 @@ class ParaHandGrasp(ParaHandEnv):
 
         #reward_flag = np.int_(palm_dist<0.1)+np.int_(obj_dist>0.05)
 
-        # Use jp.where instead of if statements, 判断哪些奖励是需要的
+        ## Use jp.where instead of if statements
         # First, calculate finger_bend for all cases
-        # reward_finger_bend = 0
         # reward_finger_bend = jp.where(
-        # palm_dist < 0.1,
-        # jp.sum(action[1:5]),
+        # palm_dist < 0.15,
+        # -jp.sum(action[13:16]), # 绳子拉动为负数，第13-16个动作对应手指弯曲
         # 0.0
         # )
         
         # Calculate lift reward based on conditions
-        # z_lift=-action[11]
-        # lift_from_position = jp.where(
-        # palm_pos[2] > 0.2,
-        # 2,
-        # 2 * jp.maximum(0, z_lift)
-        # )
+        # FIX: 原逻辑奖励手掌高度且无接触约束，会导致空手抬升骗分。
+        # 现改为：只有物体离地后，才奖励物体的高度。
+        # obj_height = obj_pos[2]
+        # is_lifted = obj_height > 0.04 # 略高于地面
         
-        # Apply lift reward only when palm is close and there's enough contact
-        # reward_lift = 0
         # reward_lift = jp.where(
-        # (palm_dist < 0.1) & (contact_num > 5),
-        # lift_from_position,
-        # 0.0
+        #     is_lifted,
+        #     obj_height * 5.0, # 强力鼓励抬高物体
+        #     0.0
         # )
 
 
@@ -367,8 +373,22 @@ class ParaHandGrasp(ParaHandEnv):
 
     # Additional sensors specially for this task env
     # TODO: check the sensor names and add these sensors to the xml if not exists
-    def get_fingertip_positions(self, data:mjx.Data) -> jax.Array:
-        """获取所有指尖的位置表示"""
+    # def get_fingertip_positions(self, data:mjx.Data) -> jax.Array:
+    #     """获取所有指尖的位置表示"""
+    #     sensor_names = [
+    #         "thumb_fingertip_pos",
+    #         "index_fingertip_pos",
+    #         "middle_fingertip_pos",
+    #         "ring_fingertip_pos",
+    #         "little_fingertip_pos",
+    #     ]
+    #     return jp.concatenate([
+    #         mjx_env.get_sensor_data(self.mj_model, data, sensor_name)
+    #         for sensor_name in sensor_names
+    #     ])
+    
+    def get_fingertip_errors(self, data:mjx.Data, cube_pos: jax.Array) -> jax.Array:
+        """获取所有指尖与方块位置的误差表示"""
         sensor_names = [
             "thumb_fingertip_pos",
             "index_fingertip_pos",
@@ -377,10 +397,10 @@ class ParaHandGrasp(ParaHandEnv):
             "little_fingertip_pos",
         ]
         return jp.concatenate([
-            mjx_env.get_sensor_data(self.mj_model, data, sensor_name)
+            mjx_env.get_sensor_data(self.mj_model, data, sensor_name) - cube_pos
             for sensor_name in sensor_names
         ])
-
+    
     # Neccessary getters 
     def get_cube_position(self, data:mjx.Data) -> jax.Array:
         """获取方块的位置表示""" 
@@ -432,7 +452,7 @@ class ParaHandGrasp(ParaHandEnv):
     def get_outer_sites_positions(self, data: mjx.Data) -> jax.Array:
         """获取outer sites的位置"""
         return data.site_xpos[self._outer_sids]
-      
+    
     def get_ten_len(self, data: mjx.Data) -> jax.Array:
         """获取tendon长度"""
         return mjx_env.get_sensor_data(self.mj_model, data, "tendon_length")

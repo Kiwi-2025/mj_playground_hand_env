@@ -38,7 +38,7 @@
       <joint type="hinge" range="0 1.57" limited="true" solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="1" stiffness="100"/>
     </default>
     <default class="palm_slide">
-      <joint solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="1" stiffness="100" limited="true"/>
+      <joint solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="1" stiffness="100"/>
     </default>
     <default class="palm_rotate">
       <joint solreflimit=".001 1" solimplimit="0.97 0.99 0.00001 0.1 2" damping="1" stiffness="60" limited="true"/>
@@ -69,24 +69,22 @@
     <mesh file="./meshes/little_link_2.STL" name="mesh_19" />
     <mesh file="./meshes/little_link_3.STL" name="mesh_20" />
   </asset>
-  <option gravity="0 0 -9.81"/>
+  <option gravity="0 0 0"/>
   <keyframe>
-    <key name="home" 
-    qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" 
-    qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-    ctrl="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" />
+    <key name="home" qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" ctrl="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" />
   </keyframe>
   <worldbody>
-    <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="1" friction="1 0.05 0.05" solref="0.001 1" solimp="0.98 0.99 0.001"/>
-    <site name="target" pos="0 0 0.2" size="0.002" rgba="1 0 0 1"/>
-    <body name="palm" pos="0 0 0.4" euler="3.14 1.57 -1.57" childclass="hand">
+    <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="2" friction="1 0.05 0.05" solref="0.001 1" solimp="0.98 0.99 0.001"/>
+    <site name="target" pos="0 0 0.3" size="0.002" rgba="1 0 0 1"/>
+    <body name="palm" pos="0 0 0.5" euler="3.14 1.57 -1.57" childclass="hand">
+      <site name="palm_pos_site" pos="0.02 -0.02 0.06" size="0.002" rgba="0 0 1 1"/>
       <site name="index_t0" pos="0.059512 -0.015 0.082" size="0.002" rgba="0 0.6 0 1"/>
       <site name="middle_t0" pos="0.031512 -0.015 0.082" size="0.002" rgba="0 0.6 0 1"/>
       <site name="ring_t0" pos="0.003512 -0.015 0.082" size="0.002" rgba="0 0.6 0 1"/>
       <site name="little_t0" pos="-0.024488 -0.015 0.082" size="0.002" rgba="0 0.6 0 1"/>
-      <joint name="palm_slide_x" type="slide" axis="1 0 0" range="-.5 .5" class="palm_slide"/>
-      <joint name="palm_slide_y" type="slide" axis="0 1 0" range="-.5 .5" class="palm_slide"/>
-      <joint name="palm_slide_z" type="slide" axis="0 0 1" range="-.2 .12" class="palm_slide"/>
+      <joint name="palm_slide_x" type="slide" axis="1 0 0" class="palm_slide"/>
+      <joint name="palm_slide_y" type="slide" axis="0 0 1" class="palm_slide"/>
+      <joint name="palm_slide_z" type="slide" axis="0 1 0" class="palm_slide"/>
       <joint name="palm_rotate_x" type="hinge" axis="1 0 0" range="-1.57 1.57" class="palm_rotate"/>
       <joint name="palm_rotate_y" type="hinge" axis="0 1 0" range="-1.57 1.57" class="palm_rotate"/>
       <joint name="palm_rotate_z" type="hinge" axis="0 0 1" range="-3.14 3.14" class="palm_rotate"/>
@@ -231,9 +229,9 @@
       </body>
     </body>
     <!-- 待抓取方块 -->
-    <body name="cube" pos="0.0 0.0 0.03" quat="0 0 0 1" childclass="cube">
+    <body name="cube" pos="0.0 0.0 0.05" quat="0 0 0 1" childclass="cube">
       <freejoint name="cube_freejoint"/>
-      <geom name="cube" type="box" size="0.03 0.03 0.03" mass="0.02" rgba="0 1 0 1" density="500"/>
+      <geom name="cube" type="box" size="0.05 0.05 0.05" rgba="0 1 0 1" density="500"/>
       <site name="cube_center" pos="0 0 0" group="4"/>
     </body>
   </worldbody>
@@ -308,10 +306,11 @@
     <position name="middle_swing" joint="middle_swing" ctrllimited="true" ctrlrange="-0.261 0.261" kp="10"/>
     <position name="ring_swing" joint="ring_swing" ctrllimited="true" ctrlrange="-0.261 0.261" kp="10"/>
     <position name="little_swing" joint="little_swing" ctrllimited="true" ctrlrange="0 0.523" kp="10"/>
-    <position name="index_joint_0" joint="index_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="10"/>
-    <position name="middle_joint_0" joint="middle_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="10"/>
-    <position name="ring_joint_0" joint="ring_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="10"/>
-    <position name="little_joint_0" joint="little_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="10"/>
+    <!-- 最靠近手掌的关节 -->
+    <position name="index_joint_0" joint="index_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="200"/>
+    <position name="middle_joint_0" joint="middle_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="200"/>
+    <position name="ring_joint_0" joint="ring_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="200"/>
+    <position name="little_joint_0" joint="little_joint_0" ctrllimited="true" ctrlrange="0 1.57" kp="200"/>
     <!-- 绳驱动 -->
     <position name="index_tendon" tendon="index_tendon" ctrllimited="true" ctrlrange="-15 0" kp="1e3"/>
     <position name="middle_tendon" tendon="middle_tendon" ctrllimited="true" ctrlrange="-15 0" kp="1e3"/>
@@ -320,7 +319,7 @@
     <!-- palm驱动 -->
     <position name="palm_slide_x" joint="palm_slide_x" ctrllimited="true" ctrlrange="-1 1" kp="900" dampratio="1"/>
     <position name="palm_slide_y" joint="palm_slide_y" ctrllimited="true" ctrlrange="-1 1" kp="900" dampratio="1"/>
-    <position name="palm_slide_z" joint="palm_slide_z" ctrllimited="true" ctrlrange="-2 1" kp="900" dampratio="1"/>
+    <position name="palm_slide_z" joint="palm_slide_z" ctrllimited="true" ctrlrange="-1 1" kp="900" dampratio="1"/>
     <position name="palm_rotate_x" joint="palm_rotate_x" ctrllimited="true" ctrlrange="-.2 .2" kp="500" dampratio="1"/>
     <position name="palm_rotate_y" joint="palm_rotate_y" ctrllimited="true" ctrlrange="-.2 .2" kp="500" dampratio="1"/>
     <position name="palm_rotate_z" joint="palm_rotate_z" ctrllimited="true" ctrlrange="-3.14 3.14" kp="300" dampratio="1"/>
@@ -334,7 +333,7 @@
     <frameangacc name="cube_angacc" objtype="body" objname="cube"/>
     <framezaxis name="cube_upvector" objtype="body" objname="cube"/>
     <!-- palm pos sensor -->
-    <framepos name="palm_pos" objtype="body" objname="palm"/>
+    <framepos name="palm_pos" objtype="site" objname="palm_pos_site"/>
     <!-- fingertip pos sensor -->
     <framepos name="thumb_fingertip_pos" objtype="site" objname="thumb_tip"/>
     <framepos name="index_fingertip_pos" objtype="site" objname="index_tip"/>
