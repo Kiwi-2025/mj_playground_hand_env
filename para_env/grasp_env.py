@@ -18,34 +18,29 @@ from para_env import para_hand_base
 from para_env.para_hand_base import ParaHandEnv
 
 def default_config() -> config_dict.ConfigDict:
-  return config_dict.create(
-      action_scale=1.0,
-      ctrl_dt=0.025,
-      sim_dt=0.005,
-      action_repeat=5,
-      ema_alpha=1.0,
-      episode_length=500,
-      success_threshold=0.1,
-      history_len=1,
-      reward_config=config_dict.create(
-          scales=config_dict.create(
-            #   reach_finger=-0.1,
-            #   inner_dist=-0.02,
-            #   outer_dist=-20,
-              reach_palm=-10.0,
-            #   lift=0.1,
-            #   move_obj=-10,
-            #   action_rate=0,
-            #   energy=0,
-            #   contact_num=0.05,
-            #   finger_bend=0.01,
-          ),
-        #   success_reward=1000.0,
-      ),
-      impl='jax',
-      nconmax=30*8192,
-      njmax=64,
-  )
+    return config_dict.create(
+        action_scale=1.0,
+        ctrl_dt=0.025,
+        sim_dt=0.005,
+        action_repeat=5,
+        ema_alpha=1.0,
+        episode_length=500,
+        success_threshold=0.1,
+        history_len=1,
+        reward_config=config_dict.create(
+            scales=config_dict.create(
+                reach_palm=10.0,
+                inner_dist=0.02,
+                outer_dist=20.0,
+                finger_bend=0.1,
+                contact=0.05,
+                lift=0.1,
+            ),
+        ),
+        impl='jax',
+        nconmax=30*8192,
+        njmax=64,
+    )
 
 class ParaHandGrasp(ParaHandEnv):
     """ParaHand抓取任务环境"""
@@ -78,10 +73,10 @@ class ParaHandGrasp(ParaHandEnv):
         self._target_sid = self._mj_model.site("target").id
         self._palm_bid = self._mj_model.body("palm").id
         self._tips_sids = jp.array([self._mj_model.site(tip).id for tip in [
-             "thumb_tip", "index_tip", "middle_tip", "ring_tip", "little_tip"
+                "thumb_tip", "index_tip", "middle_tip", "ring_tip", "little_tip"
         ]])
-        # self._inner_sids = jp.array([self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES])
-        # self._outer_sids = jp.array([self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES])
+        self._inner_sids = jp.array([self._mj_model.site(name).id for name in consts.INNER_SITE_NAMES])
+        self._outer_sids = jp.array([self._mj_model.site(name).id for name in consts.OUTER_SITE_NAMES])
 
         # self._tactile_geom_ids = jp.array([self._mj_model.geom(name).id for name in consts.TACTILE_GEOM_NAMES])
         # self._tactile_geom_body_ids = jp.array([self._mj_model.body(name).id for name in consts.TACTILE_BODY_NAMES])
@@ -97,6 +92,9 @@ class ParaHandGrasp(ParaHandEnv):
         hand_joint_ranges =self._mj_model.jnt_range[hand_joint_ids]
         self._lowers, self._uppers = hand_joint_ranges.T
         
+        # Cube dimensions (half-lengths)
+        # Get cube size from model directly to avoid hardcoding
+        self.cube_half_size = self._mj_model.geom_size[self._cube_geom_id]
         # DEBUG: print initial positions
         # jax.debug.print("init qpos shape: {}", self._init_q.shape)
         # jax.debug.print("hand qid  shape: {}", self._hand_qids.shape)
@@ -166,9 +164,17 @@ class ParaHandGrasp(ParaHandEnv):
         for k in self._config.reward_config.scales.keys():
             metrics[f"reward/{k}"] = jp.zeros(())
         metrics["reward/total"] = jp.zeros(())
+        # diagnostic metrics for tuning rewards
+        metrics["diag/palm_dist"] = jp.zeros(())
+        metrics["diag/inner_sdf_mean"] = jp.zeros(())
+        metrics["diag/inner_sdf_min"] = jp.zeros(())
+        metrics["diag/inner_sdf_max"] = jp.zeros(())
+        metrics["diag/outer_sdf_mean"] = jp.zeros(())
+        metrics["diag/contact_info"] = jp.zeros((5,))
+        metrics["diag/palm_pos_z"] = jp.zeros(())
     
         # TODO: change obs history size accordingly
-        obs_history = jp.zeros(self._config.history_len * 70) # joint_pos = 26
+        obs_history = jp.zeros(self._config.history_len * 75) # joint_pos = 26
         obs = self._get_obs(data, info, obs_history)
         reward, done = jp.zeros(2)
 
@@ -236,6 +242,7 @@ class ParaHandGrasp(ParaHandEnv):
         cube_linvel = self.get_cube_linvel(data)
         # fingertip_positions = self.get_fingertip_positions(data)
         fingertip_errors = self.get_fingertip_errors(data, cube_pos)
+        contact_forces = self.get_touch_forces(data)
 
         # 策略网络所能够观察到的状态，暂时增强
         # TODO: 我认为触觉信息也应该解包后放在这里
@@ -243,7 +250,7 @@ class ParaHandGrasp(ParaHandEnv):
             joint_qpos,
             # noisy_joint_qpos,
             fingertip_errors,
-            # cube_pos_error,
+            contact_forces,
             cube_pos,
             palm_pos,
             # cube_quat,
@@ -263,6 +270,7 @@ class ParaHandGrasp(ParaHandEnv):
             cube_quat,
             # cube_angvel,
             # cube_linvel,
+            contact_forces
         ])
     
         return {
@@ -288,87 +296,62 @@ class ParaHandGrasp(ParaHandEnv):
         - 抬升高度:当大拇指以及其他至少一根手指上的视触觉传感器检测到接触数据时(此时大概率接近或已经抓住物体),对灵巧手手掌的抬升动作进行奖励,鼓励灵巧手抬升物体
         """
         del done, metrics  # Unused.
+        
+        # 1. 获取状态信息
         target_pos = self.get_target_position(data)
         obj_pos = self.get_cube_position(data)
         obj_quat = self.get_cube_orientation(data)
         obj_pose = jp.concatenate([obj_pos, obj_quat])
         palm_pos = self.get_palm_position(data)
-        obj_dist = jp.linalg.norm(target_pos - obj_pos[:3])
 
-        ## tip靠近cube产生的奖励
-        # tips_pos = self.get_tips_positions(data)
-        # tips_dist = self.get_cube_sdf(obj_pose, tips_pos)
-        # weight = jp.array([10.0,0.0,0.0,0.0,0.0])
-        # weight = jp.array([10.0, 6.0, 6.0, 6.0, 6.0])
-        # reward_tips_dist = jp.sum(tips_dist * weight)
+        # 2. 计算各项奖励
         
-        ## 内外侧site距离靠近产生的奖励
-        # inner_dist=self.get_cube_sdf(obj_pose, self.get_inner_sites_positions(data))
-        # outer_dist=self.get_cube_sdf(obj_pose, self.get_outer_sites_positions(data))
-        # reward_inner_dist = jp.sum(jp.maximum(inner_dist[:15], -0.0001))*10 + jp.sum(jp.maximum(inner_dist[15:-4], -0.0001)) + jp.sum(jp.maximum(inner_dist[-4:], 0.01))*20
-        # reward_outer_dist = jp.sum(jp.maximum(0, inner_dist - outer_dist))
-
-        ## 手掌靠近cube产生的奖励
+        # [Reach Reward] 手掌靠近物体
+        # 距离在 [0, 0.05] 时奖励为 1，超过 0.25 降为 0
         palm_dist = jp.linalg.norm(palm_pos - obj_pos)
-        reward_reach_palm = reward.tolerance(palm_dist, bounds=(0.35 , 0.6), margin=0.35, sigmoid='linear')
-        # jax.debug.print("obj_pos:{}, palm_pos:{}, palm_dist: {}", obj_pos, palm_pos, palm_dist)
+        reward_reach_palm = reward.tolerance(
+            palm_dist, bounds=(0.0, 0.05), margin=0.2, sigmoid='linear', value_at_margin=0.0
+        )
 
-        ## 物体移动奖励
-        # reward_move = obj_dist
+        # [Inner Dist Reward] 内侧点靠近物体表面
+        # SDF 接近 0 (表面) 或略微负值 (内部) 时奖励高
+        inner_sdfs = self.get_cube_sdf(obj_pose, self.get_inner_sites_positions(data))
+        reward_inner_dist = jp.mean(reward.tolerance(
+            inner_sdfs, bounds=(-0.02, 0.02), margin=0.05, sigmoid='linear', value_at_margin=0.0
+        ))
 
-        ## 接触奖励
-        # terminated = self._get_termination(data)
-        # contact_num的要重写一下
-        # tactile_info = self.get_tactile_info(data)
-        # finger_contacts = jp.array([
-        #     jp.any(jp.abs(tactile_info[finger][:, 4]) > 0.0001)
-        #     for finger in ['index', 'middle', 'ring', 'little', 'thumb']
-        # ])
-        # weights = jp.array([1.0, 1.0, 1.0, 1.0, 5.0])  # 拇指权重为5
-        # contact_num = jp.sum(finger_contacts * weights)
-        # reward_contact = contact_num
+        # [Outer Dist Reward] 外侧点远离物体
+        # SDF > 0.03 时奖励为 1
+        outer_sdfs = self.get_cube_sdf(obj_pose, self.get_outer_sites_positions(data))
+        reward_outer_dist = jp.mean(reward.tolerance(
+            outer_sdfs, bounds=(0.03, float('inf')), margin=0.05, sigmoid='linear', value_at_margin=0.0
+        ))
 
-        #reward_flag = np.int_(palm_dist<0.1)+np.int_(obj_dist>0.05)
-
-        ## Use jp.where instead of if statements
-        # First, calculate finger_bend for all cases
-        # reward_finger_bend = jp.where(
-        # palm_dist < 0.15,
-        # -jp.sum(action[13:16]), # 绳子拉动为负数，第13-16个动作对应手指弯曲
-        # 0.0
-        # )
+        # [Finger Bend Reward] 手指弯曲
+        # 鼓励特定关节弯曲 (假设 action[12:15] 为关键关节)
+        reward_finger_bend = jp.mean(jp.abs(action[12:15]))
         
-        # Calculate lift reward based on conditions
-        # FIX: 原逻辑奖励手掌高度且无接触约束，会导致空手抬升骗分。
-        # 现改为：只有物体离地后，才奖励物体的高度。
-        # obj_height = obj_pos[2]
-        # is_lifted = obj_height > 0.04 # 略高于地面
-        
-        # reward_lift = jp.where(
-        #     is_lifted,
-        #     obj_height * 5.0, # 强力鼓励抬高物体
-        #     0.0
-        # )
+        # [Contact Reward] 接触奖励
+        # 加权计算接触情况，大拇指权重更高
+        weights = jp.array([5.0, 1.0, 1.0, 1.0, 1.0])
+        contact_info = self.get_contact_info(data, contact_threshold=1.0)
+        reward_contact = jp.sum(weights * contact_info) / jp.sum(weights)
 
+        # [Lift Reward] 抬升奖励
+        # 仅在形成抓取 (大拇指+其他手指接触) 时，奖励抬升高度
+        lift_condition = (contact_info[0] > 0.5) & (jp.sum(contact_info[1:]) >= 0.5)
+        reward_lift = reward.tolerance(
+            palm_pos[3], bounds=(0.2, float('inf')), margin=0.2, sigmoid='linear', value_at_margin=0.0
+        )
+        reward_lift = jp.where(lift_condition, reward_lift, 0.0)
 
         return {
-            # "reach_finger": reward_tips_dist,
-            # "inner_dist": reward_inner_dist,
-            # "outer_dist": reward_outer_dist,
             "reach_palm": reward_reach_palm,
-            # "lift": reward_lift,
-            # "move_obj": reward_move,
-            # "action_rate": self._cost_action_rate(
-            #     action,
-            #     info["last_act"],
-            #     info["last_last_act"],
-            # ),
-            # "energy": self._cost_energy(
-            #     data.qvel,
-            #     data.qfrc_actuator,
-            # ),
-            # "contact_num": reward_contact,
-            # "finger_bend": reward_finger_bend,
+            "inner_dist": reward_inner_dist,
+            "outer_dist": reward_outer_dist,
+            "finger_bend": reward_finger_bend,
+            "contact": reward_contact,
+            "lift": reward_lift,
         }
 
     # Additional sensors specially for this task env
@@ -433,6 +416,7 @@ class ParaHandGrasp(ParaHandEnv):
     
     def get_tips_positions(self, data: mjx.Data) -> jax.Array:
         """获取所有指尖的位置表示"""
+        # TODO：这里直接写成常量
         sensor_names = [
             "thumb_fingertip_pos",
             "index_fingertip_pos",
@@ -466,9 +450,6 @@ class ParaHandGrasp(ParaHandEnv):
         Returns:
             Array of shape (N,) with signed distances to cube surface
         """
-        # Cube dimensions (half-lengths) # TODO : 需要根据方块实际调整
-        cube_half_size = jp.array([0.03, 0.03, 0.03])
-
         # Extract translation and rotation
         pos = cube_pose[:3]
         quat = cube_pose[3:]
@@ -480,14 +461,28 @@ class ParaHandGrasp(ParaHandEnv):
         local_points = jp.einsum('ij,nj->ni', rot_matrix.T, points - pos)
 
         # Calculate distances per axis
-        d = jp.abs(local_points) - cube_half_size
+        d = jp.abs(local_points) - self.cube_half_size
 
         # Calculate final distance
         outside_distance = jp.linalg.norm(jp.maximum(d, 0.0), axis=1)
         inside_distance = jp.minimum(jp.max(d, axis=1), 0.0)
 
         return outside_distance + inside_distance 
+    
+    # 使用简化的触觉传感器获得标量力
+    def get_touch_forces(self, data: mjx.Data) -> jax.Array:
+        """返回指尖触觉传感器检测到接触的合力的大小"""
+        return jp.stack([
+            mjx_env.get_sensor_data(self.mj_model, data, sensor_name) 
+            for sensor_name in consts.TOUCH_SENSOR_NAMES
+        ]).ravel()
 
+    def get_contact_info(self, data: mjx.Data, contact_threshold: float) -> jax.Array:
+        """根据触觉力判断是否接触"""
+        touch_forces = self.get_touch_forces(data)
+        # 阈值判断：力大于 contact_threshold 视为接触
+        return jp.where(touch_forces > contact_threshold, 1.0, 0.0)
+    
     # Tactile sensor processing
     def _find_contact_indices(self, data: mjx.Data) -> tuple[jax.Array, jax.Array]:
         """Find contact indices for each tactile geom.

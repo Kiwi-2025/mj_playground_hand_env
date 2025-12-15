@@ -69,7 +69,7 @@
     <mesh file="./meshes/little_link_2.STL" name="mesh_19" />
     <mesh file="./meshes/little_link_3.STL" name="mesh_20" />
   </asset>
-  <option gravity="0 0 0"/>
+  <option gravity="0 0 -9.81"/>
   <keyframe>
     <key name="home" qpos="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" qvel="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" ctrl="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" />
   </keyframe>

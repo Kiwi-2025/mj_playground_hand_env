@@ -8,7 +8,7 @@ TASK_XML_FILES = {
     "reorient": ROOT_PATH / "xmls" / "reorient" / "reorient_hand.xml",
     "rotateZ": ROOT_PATH / "xmls" / "rotateZ" / "rotateZ_hand_tendon_pro.xml",
     # "grasp": ROOT_PATH / "xmls" / "grasp" / "grasp_hand_pro_tac.xml",
-    "grasp": ROOT_PATH / "xmls" / "grasp" / "hand_16dof_grasp.xml",
+    "grasp": ROOT_PATH / "xmls" / "grasp" / "hand_16dof_grasp_sites.xml",
 }
 
 # TODO: 确认自由度数量
@@ -40,24 +40,46 @@ TACTILE_BODY_NAMES = [
     for i in range(5) for j in range(5)     # 5x5阵列
 ]
 
-INNER_SITE_NAMES = [
-    f"inner_{finger}_{row}_{col}"
-    for finger in ["thumb", "index", "middle", "ring","little"]
-    for row in range(1, 4)
-    for col in range(5)
-]+[
-    f"inner_palm_{i}"
-    for i in range(1,5)
-]
+INNER_SITE_NAMES = (
+    [
+        f"inner_{finger}_{link}_{rank}"
+        for finger in ["index", "middle", "ring", "little"]
+        for link in range(1, 3)
+        for rank in range(1, 4)
+    ]
+    + [
+        f"inner_thumb_{link}_{rank}"
+        for link in range(2, 3)
+        for rank in range(1, 4)
+    ]
+    + [
+        f"inner_palm_{i}"
+        for i in range(1, 5)
+    ]
+)
 
-OUTER_SITE_NAMES = [
-    f"outer_{finger}_{row}_{col}"
-    for finger in ["thumb", "index", "middle", "ring","little"]
-    for row in range(1, 4)
-    for col in range(5)
-]+[
-    f"outer_palm_{i}"
-    for i in range(1,5)
+OUTER_SITE_NAMES = (
+    [
+        f"outer_{finger}_{link}_{rank}"
+        for finger in ["index", "middle", "ring", "little"]
+        for link in range(1, 3)
+        for rank in range(1, 4)
+    ]
+    + [
+        f"outer_thumb_{link}_{rank}"
+        for link in range(2, 3)
+        for rank in range(1, 4)
+    ]
+    + [
+        f"outer_palm_{i}"
+        for i in range(1, 5)
+    ]
+)
+
+# 触觉传感器名字
+TOUCH_SENSOR_NAMES = [
+    f"{finger}_touch"
+    for finger in ["thumb", "index", "middle", "ring", "little"]
 ]
 
 # change these joint names to fit xml file， only load hand related joints
