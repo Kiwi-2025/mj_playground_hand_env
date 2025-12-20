@@ -10,6 +10,9 @@
 /logs/*
 !/logs/
 
+/para_env/xmls/grasp/meshes/*
+!/para_env/xmls/grasp/meshes/
+
 __pycache__/
 
 MUJOCO_LOG.TXT

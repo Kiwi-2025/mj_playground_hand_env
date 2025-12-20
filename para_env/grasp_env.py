@@ -19,7 +19,7 @@ from para_env.para_hand_base import ParaHandEnv
 
 def default_config() -> config_dict.ConfigDict:
     return config_dict.create(
-        action_scale=1.0,
+        action_scale=0.5,
         ctrl_dt=0.025,
         sim_dt=0.005,
         action_repeat=5,
@@ -31,10 +31,12 @@ def default_config() -> config_dict.ConfigDict:
             scales=config_dict.create(
                 reach_palm=10.0,
                 inner_dist=0.02,
-                outer_dist=20.0,
+                outer_dist=15.0,
                 finger_bend=0.1,
-                contact=0.05,
+                finger_prox=0.1,
+                contact=30.0,
                 lift=0.1,
+                action_smooth=-0.1,
             ),
         ),
         impl='jax',
@@ -91,10 +93,14 @@ class ParaHandGrasp(ParaHandEnv):
         hand_joint_ids = jp.array([self._mj_model.joint(name).id for name in consts.JOINT_NAMES])
         hand_joint_ranges =self._mj_model.jnt_range[hand_joint_ids]
         self._lowers, self._uppers = hand_joint_ranges.T
+
+        # Get actuator ranges
+        self._act_lowers, self._act_uppers = jp.array(self._mj_model.actuator_ctrlrange.T)
         
         # Cube dimensions (half-lengths)
         # Get cube size from model directly to avoid hardcoding
         self.cube_half_size = self._mj_model.geom_size[self._cube_geom_id]
+        
         # DEBUG: print initial positions
         # jax.debug.print("init qpos shape: {}", self._init_q.shape)
         # jax.debug.print("hand qid  shape: {}", self._hand_qids.shape)
@@ -164,14 +170,6 @@ class ParaHandGrasp(ParaHandEnv):
         for k in self._config.reward_config.scales.keys():
             metrics[f"reward/{k}"] = jp.zeros(())
         metrics["reward/total"] = jp.zeros(())
-        # diagnostic metrics for tuning rewards
-        metrics["diag/palm_dist"] = jp.zeros(())
-        metrics["diag/inner_sdf_mean"] = jp.zeros(())
-        metrics["diag/inner_sdf_min"] = jp.zeros(())
-        metrics["diag/inner_sdf_max"] = jp.zeros(())
-        metrics["diag/outer_sdf_mean"] = jp.zeros(())
-        metrics["diag/contact_info"] = jp.zeros((5,))
-        metrics["diag/palm_pos_z"] = jp.zeros(())
     
         # TODO: change obs history size accordingly
         obs_history = jp.zeros(self._config.history_len * 75) # joint_pos = 26
@@ -182,8 +180,11 @@ class ParaHandGrasp(ParaHandEnv):
 
     def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
             motor_targets = self._default_ctrl + action * self._config.action_scale
+            motor_targets = jp.clip(motor_targets, self._act_lowers, self._act_uppers)
+            # motor_targets = motor_targets.at[16:22].set(self._default_ctrl[16:22])
             # debug info
             # jax.debug.print("step action shape: {}", action.shape)
+            # jax.debug.print("motor target:{},action:{}", motor_targets, action)
             # jax.debug.print("motor targets: {}", motor_targets)
 
             data = mjx_env.step(
@@ -307,51 +308,74 @@ class ParaHandGrasp(ParaHandEnv):
         # 2. 计算各项奖励
         
         # [Reach Reward] 手掌靠近物体
-        # 距离在 [0, 0.05] 时奖励为 1，超过 0.25 降为 0
         palm_dist = jp.linalg.norm(palm_pos - obj_pos)
+        # reward_reach_palm = palm_dist
         reward_reach_palm = reward.tolerance(
             palm_dist, bounds=(0.0, 0.05), margin=0.2, sigmoid='linear', value_at_margin=0.0
         )
+        # jax.debug.print("palm dist: {}, reach reward: {}", palm_dist, reward_reach_palm)
 
         # [Inner Dist Reward] 内侧点靠近物体表面
         # SDF 接近 0 (表面) 或略微负值 (内部) 时奖励高
         inner_sdfs = self.get_cube_sdf(obj_pose, self.get_inner_sites_positions(data))
-        reward_inner_dist = jp.mean(reward.tolerance(
+        reward_inner_dist = jp.sum(reward.tolerance(
             inner_sdfs, bounds=(-0.02, 0.02), margin=0.05, sigmoid='linear', value_at_margin=0.0
         ))
+        # jax.debug.print("inner sdf: {}, inner dist reward: {}", inner_sdfs, reward_inner_dist)
 
         # [Outer Dist Reward] 外侧点远离物体
         # SDF > 0.03 时奖励为 1
         outer_sdfs = self.get_cube_sdf(obj_pose, self.get_outer_sites_positions(data))
-        reward_outer_dist = jp.mean(reward.tolerance(
-            outer_sdfs, bounds=(0.03, float('inf')), margin=0.05, sigmoid='linear', value_at_margin=0.0
+        reward_outer_dist = jp.sum(reward.tolerance(
+            outer_sdfs, bounds=(-0.02, 0.02), margin=0.05, sigmoid='linear', value_at_margin=0.0
         ))
+        # jax.debug.print("outer sdf: {}, outer dist reward: {}", outer_sdfs, reward_outer_dist)
 
         # [Finger Bend Reward] 手指弯曲
-        # 鼓励特定关节弯曲 (假设 action[12:15] 为关键关节)
-        reward_finger_bend = jp.mean(jp.abs(action[12:15]))
+        # 鼓励特定关节弯曲 (假设 action[12:16] 为关键关节)
+        # reward_finger_bend = jp.sum(jp.abs(action[8:16]))
+        is_close = palm_dist < 0.2
+        reward_finger_bend = jp.where(is_close, jp.sum(action[8:16]), 0.0)
+        # jax.debug.print("finger bend reward: {}", reward_finger_bend)
+        
+        # [Finger Proximity Reward] 鼓励指尖靠近方块
+        # 计算每个指尖到方块中心的距离，并在距离较小时给予更高奖励
+        tips_pos = self.get_tips_positions(data)
+        tip_dists = jp.linalg.norm(tips_pos - obj_pos, axis=1)
+        reward_finger_prox = jp.sum(reward.tolerance(
+            tip_dists, bounds=(0.0, 0.01), margin=0.2, sigmoid='linear', value_at_margin=0.0
+        ))
+        # jax.debug.print("tip dists: {}, finger prox reward: {}", tip_dists, reward_finger_prox)
         
         # [Contact Reward] 接触奖励
         # 加权计算接触情况，大拇指权重更高
         weights = jp.array([5.0, 1.0, 1.0, 1.0, 1.0])
-        contact_info = self.get_contact_info(data, contact_threshold=1.0)
+        contact_info = self.get_contact_info(data, contact_threshold=0.1)
         reward_contact = jp.sum(weights * contact_info) / jp.sum(weights)
+        # jax.debug.print("contact info: {}, contact reward: {}", contact_info, reward_contact)
 
         # [Lift Reward] 抬升奖励
         # 仅在形成抓取 (大拇指+其他手指接触) 时，奖励抬升高度
         lift_condition = (contact_info[0] > 0.5) & (jp.sum(contact_info[1:]) >= 0.5)
         reward_lift = reward.tolerance(
-            palm_pos[3], bounds=(0.2, float('inf')), margin=0.2, sigmoid='linear', value_at_margin=0.0
+            palm_pos[2], bounds=(0.2, float('inf')), margin=0.2, sigmoid='linear', value_at_margin=0.0
         )
         reward_lift = jp.where(lift_condition, reward_lift, 0.0)
+        # jax.debug.print("palm height: {}, lift reward: {}", palm_pos[2], reward_lift)
+
+        # [Action Smoothness Reward] 动作平滑性惩罚
+        reward_action_smooth = jp.sum(jp.square(action - info["last_act"]))
+        # jax.debug.print("action smooth reward: {}", reward_action_smooth)
 
         return {
             "reach_palm": reward_reach_palm,
             "inner_dist": reward_inner_dist,
             "outer_dist": reward_outer_dist,
+            "finger_prox": reward_finger_prox,
             "finger_bend": reward_finger_bend,
             "contact": reward_contact,
             "lift": reward_lift,
+            "action_smooth": reward_action_smooth,
         }
 
     # Additional sensors specially for this task env

@@ -79,7 +79,7 @@
     <worldbody>
         <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="2" friction="1 0.05 0.05" solref="0.001 1" solimp="0.98 0.99 0.001"/>
         <site name="target" pos="0 0 0.3" size="0.002" rgba="1 0 0 1"/>
-        <body name="palm" pos="0 0 0.5" euler="3.14 1.57 -1.57" childclass="hand">
+        <body name="palm" pos="0 0 0.3" euler="3.14 1.57 -1.57" childclass="hand">
             <!-- inner site -->
             <site name="inner_palm_1" pos="-0.02 -0.02 0.02" size="0.001" rgba="0 1 0 1"/>
             <site name="inner_palm_2" pos="0.05 -0.02 0.02" size="0.001" rgba="0 1 0 1"/>
@@ -483,15 +483,15 @@
         <position name="ring_swing" joint="ring_swing" ctrllimited="true" ctrlrange="-1 1" gear="3.83" kp="0.68"/>
         <position name="little_swing" joint="little_swing" ctrllimited="true" ctrlrange="-1 1" gear="1.91" kp="2.7"/>
         <!-- 最靠近手掌的关节 -->
-        <position name="index_joint_0" joint="index_joint_0" ctrllimited="true" ctrlrange="-1 1" gear="0.637" kp="500"/>
-        <position name="middle_joint_0" joint="middle_joint_0" ctrllimited="true" ctrlrange="-1 1" gear="0.637" kp="500"/>
-        <position name="ring_joint_0" joint="ring_joint_0" ctrllimited="true" ctrlrange="-1 1" gear="0.637" kp="500"/>
-        <position name="little_joint_0" joint="little_joint_0" ctrllimited="true" ctrlrange="-1 1" gear="0.637" kp="500"/>
+        <position name="index_joint_0" joint="index_joint_0" ctrllimited="true" ctrlrange="0 1" gear="0.637" kp="500"/>
+        <position name="middle_joint_0" joint="middle_joint_0" ctrllimited="true" ctrlrange="0 1" gear="0.637" kp="500"/>
+        <position name="ring_joint_0" joint="ring_joint_0" ctrllimited="true" ctrlrange="0 1" gear="0.637" kp="500"/>
+        <position name="little_joint_0" joint="little_joint_0" ctrllimited="true" ctrlrange="0 1" gear="0.637" kp="500"/>
         <!-- 绳驱动 -->
-        <position name="index_tendon" tendon="index_tendon" ctrllimited="true" ctrlrange="-1 1" kp="500"/>
-        <position name="middle_tendon" tendon="middle_tendon" ctrllimited="true" ctrlrange="-1 1" kp="500"/>
-        <position name="ring_tendon" tendon="ring_tendon" ctrllimited="true" ctrlrange="-1 1" kp="500"/>
-        <position name="little_tendon" tendon="little_tendon" ctrllimited="true" ctrlrange="-1 1" kp="500"/>
+        <position name="index_tendon" tendon="index_tendon" ctrllimited="true" ctrlrange="-1 0" kp="500"/>
+        <position name="middle_tendon" tendon="middle_tendon" ctrllimited="true" ctrlrange="-1 0" kp="500"/>
+        <position name="ring_tendon" tendon="ring_tendon" ctrllimited="true" ctrlrange="-1 0" kp="500"/>
+        <position name="little_tendon" tendon="little_tendon" ctrllimited="true" ctrlrange="-1 0" kp="500"/>
         <!-- palm驱动 -->
         <position name="palm_slide_x" joint="palm_slide_x" ctrllimited="true" ctrlrange="-1 1" kp="900" dampratio="1"/>
         <position name="palm_slide_y" joint="palm_slide_y" ctrllimited="true" ctrlrange="-1 1" kp="900" dampratio="1"/>

@@ -1,1 +1,1 @@
-tensorboard --logdir /home/rvsa/mj_playground_hand_env/logs/ParaHandGrasp-20251214-221631 --port 6006
+tensorboard --logdir /home/rvsa/mj_playground_hand_env/logs/ParaHandGrasp-20251218-155034 --port 6006
