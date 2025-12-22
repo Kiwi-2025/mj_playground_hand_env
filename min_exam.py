@@ -42,7 +42,11 @@ camera.lookat[2] = 0.1          # 调整观察点高度
 state = jit_reset(jax.random.PRNGKey(0))
 # ctrl = jp.zeros(env.action_size)
 ctrl = env._default_ctrl.copy()
-ctrl = ctrl.at[12:16].set(-0.8)  
+action = jp.zeros(env.action_size)
+action = action.at[12:16].set(-1.0)
+motor_targets = env._default_ctrl + action * env._config.action_scale
+motor_targets = jp.clip(motor_targets, env._act_lowers, env._act_uppers)
+ctrl = motor_targets
 
 # 分批仿真和渲染
 frames = []

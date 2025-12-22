@@ -20,7 +20,7 @@ from para_env.para_hand_base import ParaHandEnv
 def default_config() -> config_dict.ConfigDict:
     return config_dict.create(
         action_scale=0.5,
-        ctrl_dt=0.025,
+        ctrl_dt=0.02,
         sim_dt=0.005,
         action_repeat=5,
         ema_alpha=1.0,
@@ -30,13 +30,13 @@ def default_config() -> config_dict.ConfigDict:
         reward_config=config_dict.create(
             scales=config_dict.create(
                 reach_palm=10.0,
-                inner_dist=0.02,
-                outer_dist=15.0,
-                finger_bend=0.1,
-                finger_prox=0.1,
-                contact=30.0,
-                lift=0.1,
-                action_smooth=-0.1,
+                inner_dist=0.0,
+                outer_dist=0.0,
+                finger_bend=0.5,
+                finger_prox=5.0,
+                contact=50.0,
+                lift=900.0,
+                action_smooth=-0.01,
             ),
         ),
         impl='jax',
@@ -309,10 +309,12 @@ class ParaHandGrasp(ParaHandEnv):
         
         # [Reach Reward] 手掌靠近物体
         palm_dist = jp.linalg.norm(palm_pos - obj_pos)
-        # reward_reach_palm = palm_dist
+        # 防止从地下刷分：限制手掌高度必须高于地面一定距离 (例如 1cm)
+        valid_height = palm_pos[2] > 0.01
         reward_reach_palm = reward.tolerance(
-            palm_dist, bounds=(0.0, 0.05), margin=0.2, sigmoid='linear', value_at_margin=0.0
+            palm_dist, bounds=(0.0, 0.05), margin=0.5, sigmoid='linear', value_at_margin=0.0
         )
+        reward_reach_palm = jp.where(valid_height, reward_reach_palm, 0.0)
         # jax.debug.print("palm dist: {}, reach reward: {}", palm_dist, reward_reach_palm)
 
         # [Inner Dist Reward] 内侧点靠近物体表面
@@ -330,35 +332,44 @@ class ParaHandGrasp(ParaHandEnv):
             outer_sdfs, bounds=(-0.02, 0.02), margin=0.05, sigmoid='linear', value_at_margin=0.0
         ))
         # jax.debug.print("outer sdf: {}, outer dist reward: {}", outer_sdfs, reward_outer_dist)
+        
+        is_close = palm_dist < 0.2
 
         # [Finger Bend Reward] 手指弯曲
-        # 鼓励特定关节弯曲 (假设 action[12:16] 为关键关节)
-        # reward_finger_bend = jp.sum(jp.abs(action[8:16]))
-        is_close = palm_dist < 0.2
-        reward_finger_bend = jp.where(is_close, jp.sum(action[8:16]), 0.0)
+        # 鼓励特定关节弯曲 (基于 action)
+        # 12:16 (Tendon, 绳索) -> 负值表示弯曲 -> 取负号
+        # 8:12 (MCP, 直驱) -> 正值表示弯曲 -> 取正号
+        # 0:4 (Thumb, 直驱) -> 正值表示弯曲 -> 取正号
+        bend_act = -jp.sum(action[12:16]) + jp.sum(action[8:12]) + 0.5 * jp.sum(action[0:4])
+        reward_finger_bend = jp.where(is_close, bend_act, 0.0)
+        # reward_finger_bend = jp.where(is_close, jp.clip(bend_act, -1.0, 1.0), 0.0)
         # jax.debug.print("finger bend reward: {}", reward_finger_bend)
         
         # [Finger Proximity Reward] 鼓励指尖靠近方块
         # 计算每个指尖到方块中心的距离，并在距离较小时给予更高奖励
         tips_pos = self.get_tips_positions(data)
         tip_dists = jp.linalg.norm(tips_pos - obj_pos, axis=1)
-        reward_finger_prox = jp.sum(reward.tolerance(
-            tip_dists, bounds=(0.0, 0.01), margin=0.2, sigmoid='linear', value_at_margin=0.0
-        ))
+        # 仅计算在地面之上的指尖，防止钻地
+        valid_tips = tips_pos[:, 2] > 0.005
+        
+        reward_finger_prox = reward.tolerance(jp.sum(tip_dists), bounds=(0.0, 0.0), margin=1.0, sigmoid='linear', value_at_margin=0.0)
+        # 如果所有指尖都钻地了，prox 奖励归零
+        reward_finger_prox = jp.where(jp.any(valid_tips) & is_close, reward_finger_prox, 0.0)
         # jax.debug.print("tip dists: {}, finger prox reward: {}", tip_dists, reward_finger_prox)
         
         # [Contact Reward] 接触奖励
         # 加权计算接触情况，大拇指权重更高
         weights = jp.array([5.0, 1.0, 1.0, 1.0, 1.0])
         contact_info = self.get_contact_info(data, contact_threshold=0.1)
-        reward_contact = jp.sum(weights * contact_info) / jp.sum(weights)
+        # reward_contact = jp.sum(weights * contact_info) / jp.sum(weights)
+        reward_contact = jp.where(is_close, jp.sum(weights * contact_info) / 9.0, 0.0)
         # jax.debug.print("contact info: {}, contact reward: {}", contact_info, reward_contact)
 
         # [Lift Reward] 抬升奖励
         # 仅在形成抓取 (大拇指+其他手指接触) 时，奖励抬升高度
         lift_condition = (contact_info[0] > 0.5) & (jp.sum(contact_info[1:]) >= 0.5)
         reward_lift = reward.tolerance(
-            palm_pos[2], bounds=(0.2, float('inf')), margin=0.2, sigmoid='linear', value_at_margin=0.0
+            palm_pos[2], bounds=(0.4, float('inf')), margin=0.4, sigmoid='linear', value_at_margin=0.0
         )
         reward_lift = jp.where(lift_condition, reward_lift, 0.0)
         # jax.debug.print("palm height: {}, lift reward: {}", palm_pos[2], reward_lift)

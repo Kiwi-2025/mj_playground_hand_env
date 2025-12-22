@@ -507,10 +507,10 @@ def main(argv):
   # camera.type = mujoco.mjtCamera.mjCAMERA_TRACKING
   # camera.trackbodyid = env.mj_model.body("palm").id  # 跟踪手掌
   # camera.distance = 0.8            # 缩短摄像机距离
-  camera.distance = 1.8           # 缩短摄像机距离
-  camera.azimuth = 120           # 调整方位角以获得更好的视角
-  camera.elevation = -30          # 从略微向下的角度观察
-  camera.lookat[2] = 0.1          # 调整观察点高度
+  camera.distance = 1.2           # 缩短摄像机距离
+  camera.azimuth = -60           # 调整方位角以获得更好的视角
+  camera.elevation = 0          # 从略微向下的角度观察
+  camera.lookat[2] = 0.05          # 调整观察点高度
 
   for i, rollout in enumerate(trajectories):
     traj = rollout[::render_every]

@@ -47,7 +47,7 @@ def brax_ppo_config(
 
     elif env_name == "ParaHandGrasp":
         rl_config.num_timesteps = 100_000_000
-        rl_config.num_evals = 10
+        rl_config.num_evals = 20
         rl_config.num_minibatches = 32
         rl_config.unroll_length = 40
         rl_config.num_updates_per_batch = 4
@@ -60,8 +60,8 @@ def brax_ppo_config(
         rl_config.network_factory = config_dict.create(
             # policy_hidden_layer_sizes=(512, 256, 128),
             # value_hidden_layer_sizes=(512, 256, 128),
-            policy_hidden_layer_sizes=(256, 128),
-            value_hidden_layer_sizes=(256, 128),
+            policy_hidden_layer_sizes=(128, 64),
+            value_hidden_layer_sizes=(128, 64),
             policy_obs_key="state",
             value_obs_key="privileged_state",
         )
