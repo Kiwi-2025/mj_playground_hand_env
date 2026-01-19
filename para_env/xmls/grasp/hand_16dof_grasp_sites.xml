@@ -79,7 +79,7 @@
     <worldbody>
         <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="2" friction="1 0.05 0.05" solref="0.001 1" solimp="0.98 0.99 0.001"/>
         <site name="target" pos="0 0 0.3" size="0.002" rgba="1 0 0 1"/>
-        <body name="palm" pos="0 0 0.3" euler="3.14 1.57 -1.57" childclass="hand">
+        <body name="palm" pos="0 0 0.2" euler="3.14 1.57 -1.57" childclass="hand">
             <!-- inner site -->
             <site name="inner_palm_1" pos="-0.02 -0.02 0.02" size="0.001" rgba="0 1 0 1"/>
             <site name="inner_palm_2" pos="0.05 -0.02 0.02" size="0.001" rgba="0 1 0 1"/>

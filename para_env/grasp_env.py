@@ -245,8 +245,15 @@ class ParaHandGrasp(ParaHandEnv):
         fingertip_errors = self.get_fingertip_errors(data, cube_pos)
         contact_forces = self.get_touch_forces(data)
 
+        # DEBUG
+        # jax.debug.print("cube pos: {}, palm pos: {}, pos error: {}", cube_pos, palm_pos, cube_pos_error)
+        # jax.debug.print("cube quat: {}", cube_quat)
+        # jax.debug.print("cube angvel: {}", cube_angvel)
+        # jax.debug.print("cube linvel: {}", cube_linvel)
+        # jax.debug.print("contact forces: {}", contact_forces)
+        # jax.debug.print("fingertip errors: {}", fingertip_errors)
+
         # 策略网络所能够观察到的状态，暂时增强
-        # TODO: 我认为触觉信息也应该解包后放在这里
         state = jp.concatenate([
             joint_qpos,
             # noisy_joint_qpos,

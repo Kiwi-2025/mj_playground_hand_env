@@ -1,5 +1,4 @@
-python train.py \
+python train_rsl_rl.py \
   --env_name=ParaHandGrasp \
-  --load_checkpoint_path=logs/ParaHandGrasp-20251222-103526/checkpoints/000004915200 \
   --play_only \
-  --num_videos=2
+  --load_run_name=ParaHandGrasp-20260118-212627

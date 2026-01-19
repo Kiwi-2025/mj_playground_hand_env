@@ -47,11 +47,11 @@ def brax_ppo_config(
 
     elif env_name == "ParaHandGrasp":
         rl_config.num_timesteps = 100_000_000
-        rl_config.num_evals = 20
+        rl_config.num_evals = 10
         rl_config.num_minibatches = 32
-        rl_config.unroll_length = 40
-        rl_config.num_updates_per_batch = 4
-        rl_config.discounting = 0.97
+        rl_config.unroll_length = 128
+        rl_config.num_updates_per_batch = 5
+        rl_config.discounting = 0.99
         rl_config.learning_rate = 3e-4
         rl_config.entropy_cost = 1e-2
         rl_config.num_envs = 8192

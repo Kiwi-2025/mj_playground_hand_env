@@ -1,0 +1,11 @@
+CUDA_VISIBLE_DEVICES=0 python train.py \
+    --env_name=ParaHandGrasp \
+    --num_envs=1 \
+    --unroll_length=20 \
+    --batch_size=10 \
+    --num_minibatches=2 \
+    --num_updates_per_batch=2 \
+    --num_timesteps=5000 \
+    --log_training_metrics=True \
+    --training_metrics_steps=10 \
+    --episode_length=100
